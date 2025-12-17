@@ -17,6 +17,14 @@
 
 ---
 
+## システム全体アーキテクチャ
+
+![概要図](diagrams/svg/overview.svg)
+
+> 詳細な図の解説や拡張方針は [diagrams/note/overview.note.md](diagrams/note/overview.note.md) を参照。
+
+---
+
 ## 機能要件（MVP & Phase2）
 
 ### MVP（最小機能）
@@ -77,7 +85,7 @@ tf-practice/
 ├── modules/                # サービス毎モジュール群
 ├── docs/                   # 運用/設計/提案ドキュメント
 ├── adr/                    # 重要設計意思決定(ADR)
-├── diagrams/               # 設計図（draw.io等）
+├── diagrams/               # 設計図・SVG・note等
 ├── lambda-functions/       # Lambda用コード
 └── ci-cd/                  # CI/CD構成例
 ```
@@ -112,5 +120,4 @@ terraform apply
 - [docs/project-proposal.md](docs/project-proposal.md): アイデア/要件/仕様詳細
 - [docs/goal_structure_20251217.md](docs/goal_structure_20251217.md): 目標ディレクトリ構成・進捗ロードマップ
 - [adr/](adr/): 主要意思決定ドキュメント
-- [diagrams/](diagrams/): draw.io 構成図
-
+- [diagrams/](diagrams/): draw.io 構成図・svg・設計メモ
