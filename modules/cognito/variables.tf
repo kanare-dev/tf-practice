@@ -158,12 +158,12 @@ variable "supported_identity_providers" {
 variable "lambda_config" {
   description = "Lambdaトリガー設定"
   type = object({
-    pre_sign_up                = optional(string)
-    pre_authentication         = optional(string)
-    post_authentication        = optional(string)
-    post_confirmation          = optional(string)
-    define_auth_challenge      = optional(string)
-    create_auth_challenge      = optional(string)
+    pre_sign_up                    = optional(string)
+    pre_authentication             = optional(string)
+    post_authentication            = optional(string)
+    post_confirmation              = optional(string)
+    define_auth_challenge          = optional(string)
+    create_auth_challenge          = optional(string)
     verify_auth_challenge_response = optional(string)
   })
   default = null
