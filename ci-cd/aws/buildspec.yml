@@ -1,0 +1,41 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - echo Installing Terraform...
+      - wget -q https://releases.hashicorp.com/terraform/1.5.0/terraform_1.5.0_linux_amd64.zip
+      - unzip -q terraform_1.5.0_linux_amd64.zip
+      - mv terraform /usr/local/bin/
+      - terraform version
+
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - export AWS_DEFAULT_REGION=$AWS_REGION
+      - echo Terraform format check...
+      - terraform fmt -check -recursive || exit 1
+      - echo Changed files in this commit
+      - git diff-tree --no-commit-id --name-only -r $CODEBUILD_SOURCE_VERSION
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Validating Terraform configurations...
+      - cd environments/dev
+      - terraform init
+      - terraform validate
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Terraform plan...
+      - terraform plan -out=tfplan || exit 1
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: environments/dev
+
