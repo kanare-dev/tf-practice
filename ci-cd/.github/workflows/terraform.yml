@@ -6,16 +6,16 @@ on:
       - main
       - develop
     paths:
-      - "environments/**"
-      - "modules/**"
+      - "terraform/environments/**"
+      - "terraform/modules**"
       - ".github/workflows/**"
   pull_request:
     branches:
       - main
       - develop
     paths:
-      - "environments/**"
-      - "modules/**"
+      - "terraform/environments/**"
+      - "terraform/modules**"
 
 env:
   AWS_REGION: ap-northeast-1
@@ -53,11 +53,11 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: Terraform Init
-        working-directory: environments/${{ matrix.environment }}
+        working-directory: terraform/environments/${{ matrix.environment }}
         run: terraform init -backend=false
 
       - name: Terraform Validate
-        working-directory: environments/${{ matrix.environment }}
+        working-directory: terraform/environments/${{ matrix.environment }}
         run: terraform validate
 
   terraform-plan:
@@ -85,11 +85,11 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
-        working-directory: environments/${{ matrix.environment }}
+        working-directory: terraform/environments/${{ matrix.environment }}
         run: terraform init
 
       - name: Terraform Plan
-        working-directory: environments/${{ matrix.environment }}
+        working-directory: terraform/environments/${{ matrix.environment }}
         run: terraform plan -out=tfplan
         continue-on-error: true
 
