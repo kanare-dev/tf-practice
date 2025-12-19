@@ -20,30 +20,14 @@
 - **terraform-plan**: プルリクエスト時に実行計画を表示
 - **terraform-apply**: mainブランチへのマージ時に自動適用
 
-## AWS CodePipeline / CodeBuild
+## AWS CodePipeline / CodeBuild（参考・オプション）
 
-### 設定方法
+> ※このプロジェクトでは **GitHub Actionsを推奨CI/CD** としています。CodeBuild運用は特殊な要件（例：会社方針やAWS上統一運用など）がある場合のみ参考にしてください。
 
-1. CodePipelineコンソールで新しいパイプラインを作成
-2. ソース: GitHub（接続が必要）
-3. ビルド: CodeBuild
-4. デプロイ: （必要に応じて追加）
+### 参考: CodeBuild/CodePipeline を使いたい場合
 
-### Buildspecファイル
-
-`ci-cd/aws/buildspec.yml`を使用してCodeBuildを設定します。
-
-### 手動セットアップ
-
-```bash
-# CodeBuildプロジェクトの作成（Terraformで管理することも可能）
-aws codebuild create-project \
-  --name terraform-build \
-  --source type=GITHUB,location=https://github.com/your-org/tf-practice \
-  --buildspec ci-cd/aws/buildspec.yml \
-  --service-role arn:aws:iam::account-id:role/codebuild-service-role
-```
-
+- 独自にCodeBuild/CodePipeline構築したい場合には buildspec.yml テンプレートを参考にカスタマイズしてください。
+- 通常の開発運用では不要です。
 ## セキュリティ考慮事項
 
 - AWS認証情報はSecrets Managerまたは環境変数で管理

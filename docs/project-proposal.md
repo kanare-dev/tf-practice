@@ -86,7 +86,7 @@ NoteTable
 - **S3**: ファイルストレージ、署名付きURL
 - **DynamoDB GSI**: 複合クエリ、ソート
 - **Step Functions**: ワークフローオーケストレーション（バッチ処理など）
-- **CodePipeline/CodeBuild**: CI/CDパイプライン
+- **CodePipeline/CodeBuild**: CI/CDパイプライン（参考・大規模向けオプション。通常はGitHub Actionsを利用）
 - **CloudWatch**: ログとメトリクス
 
 ## 実装の複雑度

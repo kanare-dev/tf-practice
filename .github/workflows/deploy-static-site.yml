@@ -6,7 +6,10 @@ on:
       - main
       - master
       - develop
-  workflow_dispatch:  # 手動実行対応を追加
+  workflow_dispatch: # 手動実行対応を追加
+
+env:
+  BUCKET_NAME: tfpractice-dev-static-web-3bbf3851
 
 jobs:
   deploy:
@@ -23,10 +26,10 @@ jobs:
 
       - name: Check if S3 bucket exists
         run: |
-          if ! aws s3 ls "s3://YOUR_BUCKET_NAME" > /dev/null 2>&1; then
+          if ! aws s3 ls "s3://${{ env.BUCKET_NAME }}" > /dev/null 2>&1; then
             echo "S3バケットが存在しないため、デプロイはスキップします";
             exit 0
           fi
 
       - name: Sync static files to S3
-        run: aws s3 sync frontend/public/ s3://YOUR_BUCKET_NAME/ --delete
+        run: aws s3 sync frontend/public/ s3://${{ env.BUCKET_NAME }}/ --delete
