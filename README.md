@@ -1,6 +1,7 @@
 # Personal Notes App – AWS/Terraform 総合学習プロジェクト
 
 [![Terraform CI](https://github.com/Canale0107/tf-practice/actions/workflows/terraform.yml/badge.svg)](https://github.com/Canale0107/tf-practice/actions/workflows/terraform.yml)
+[![Deploy Static Site to S3](https://github.com/Canale0107/tf-practice/actions/workflows/deploy-static-site.yml/badge.svg)](https://github.com/Canale0107/tf-practice/actions/workflows/deploy-static-site.yml)
 
 ---
 
