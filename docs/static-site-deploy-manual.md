@@ -1,8 +1,21 @@
-# 静的サイト S3 ホスティング 操作マニュアル
+# 静的サイト S3/CDN ホスティング 操作 & 運用方針マニュアル
 
-この操作マニュアルは、AWS S3 を使った静的ウェブサイト公開・再公開（デプロイ）およびインフラ管理手順をまとめたものです。
+このマニュアルは、AWS S3 + CloudFront（+Cloudflare DNS）を利用した静的ウェブサイト公開・再公開（デプロイ）と、公開サブドメインのHTTPS運用設計方針を記録します。
 
 ---
+
+## CloudFront + HTTPS/CDN 配信アーキテクチャ設計方針（2025年12月決定）
+
+- S3のWebsiteエンドポイントはHTTPのみであり、HSTSやHTTPS強制下では直で公開できません。
+- サブドメイン(例: note-app.kanare.dev)向け静的コンテンツHTTPS配信には、CloudFront + ACM証明書を必ず使用してください。
+    - CloudFront オリジン: `S3静的Webサイトエンドポイント` (**バケットモード不可 / SPAやカスタムエラー時に必須**)
+    - ACM証明書: サブドメイン用(例: note-app.kanare.dev), バージニア北部(us-east-1)リージョンで発行
+    - CloudFrontディストリビューションへ ACMをアタッチ
+    - Cloudflare DNS: サブドメイン(CNAME, DNS only) → CloudFront(例: dxxx.cloudfront.net)
+- S3バケットのパブリックアクセスはCloudFront経由のみに限定することを推奨
+- 詳細な意思決定 rationale/背景/トレードオフについては [`adr/0002-cloudfront-for-static-site.md`](../adr/0002-cloudfront-for-static-site.md) も参照
+
+※以下は従来S3直公開時（HTTP時代）の参考情報。CloudFront移行後は原則として全サブドメインHTTPS配信とすること。
 
 ## 1. S3 バケットの新規作成（インフラ側）
 
