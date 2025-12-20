@@ -285,6 +285,8 @@ aws dynamodb list-tables
 
 **重要**: リソースを削除しないと、継続的に料金が発生します。
 
+**注意**: リソースを削除した後、再構築する場合は [再構築ガイド](rebuild-guide.md) を参照してください。
+
 ### すべてのリソースを削除
 
 ```bash
@@ -343,6 +345,8 @@ aws dynamodb list-tables      # テーブルが表示されないはず
 2. [ADR](../adr/)を読んで設計決定を確認
 3. モジュールをカスタマイズして機能を追加
 4. CI/CD パイプラインを設定: [CI/CD ガイド](cicd-guide.md)
+5. インフラ再構築の方法を確認: [再構築ガイド](rebuild-guide.md)
+6. DNS管理を自動化する: [Cloudflare Terraform導入ガイド](cloudflare-terraform-guide.md)
 
 ## 参考リンク
 

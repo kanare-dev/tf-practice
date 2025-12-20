@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = ">= 4.0"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
   }
 }
 
@@ -14,6 +18,10 @@ provider "aws" {
 provider "aws" {
   alias  = "useast1"
   region = "us-east-1"
+}
+
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
 }
 
 resource "random_id" "suffix" {
@@ -141,14 +149,14 @@ module "api_gateway" {
   lambda_invoke_arn    = module.lambda_api_handler.function_invoke_arn
   lambda_function_name = module.lambda_api_handler.function_name
   authorization_type   = "NONE"
-  
+
   # レート制限設定を有効化
-  enable_throttling     = true
-  throttle_burst_limit  = 100   # バースト時の最大リクエスト数
-  throttle_rate_limit   = 50    # 1秒あたりの平均リクエスト数
-  quota_limit           = 10000 # 1日あたりの最大リクエスト数
-  quota_period          = "DAY"
-  
+  enable_throttling    = true
+  throttle_burst_limit = 100   # バースト時の最大リクエスト数
+  throttle_rate_limit  = 50    # 1秒あたりの平均リクエスト数
+  quota_limit          = 10000 # 1日あたりの最大リクエスト数
+  quota_period         = "DAY"
+
   tags = {
     Name   = "dev-tfpractice-apigw"
     system = "tfpractice"
@@ -182,6 +190,83 @@ resource "aws_api_gateway_base_path_mapping" "api_mapping" {
 output "api_custom_domain_target" {
   value       = aws_api_gateway_domain_name.api_custom.cloudfront_domain_name
   description = "API Gatewayカスタムドメイン向けCNAME先"
+}
+
+# ========================================
+# Cloudflare DNS Records
+# ========================================
+
+# ACM証明書検証レコード（note-app用）
+resource "cloudflare_record" "acm_validation_note_app" {
+  count = var.enable_cloudflare_dns ? 1 : 0
+
+  zone_id = var.cloudflare_zone_id
+  name    = tolist(aws_acm_certificate.note_app_cert.domain_validation_options)[0].resource_record_name
+  value   = trimsuffix(tolist(aws_acm_certificate.note_app_cert.domain_validation_options)[0].resource_record_value, ".")
+  type    = "CNAME"
+  proxied = false # DNS only
+  comment = "ACM certificate validation for note-app.kanare.dev"
+}
+
+# ACM証明書検証レコード（api.note-app用）
+resource "cloudflare_record" "acm_validation_api" {
+  count = var.enable_cloudflare_dns ? 1 : 0
+
+  zone_id = var.cloudflare_zone_id
+  name    = tolist(aws_acm_certificate.api_custom.domain_validation_options)[0].resource_record_name
+  value   = trimsuffix(tolist(aws_acm_certificate.api_custom.domain_validation_options)[0].resource_record_value, ".")
+  type    = "CNAME"
+  proxied = false # DNS only
+  comment = "ACM certificate validation for api.note-app.kanare.dev"
+}
+
+# CloudFront（静的サイト）向けCNAMEレコード
+resource "cloudflare_record" "note_app" {
+  count = var.enable_cloudflare_dns ? 1 : 0
+
+  zone_id = var.cloudflare_zone_id
+  name    = "note-app"
+  value   = aws_cloudfront_distribution.note_app.domain_name
+  type    = "CNAME"
+  proxied = false # DNS only
+  comment = "CloudFront distribution for note-app static site"
+}
+
+# API Gateway向けCNAMEレコード
+resource "cloudflare_record" "api_note_app" {
+  count = var.enable_cloudflare_dns ? 1 : 0
+
+  zone_id = var.cloudflare_zone_id
+  name    = "api.note-app"
+  value   = aws_api_gateway_domain_name.api_custom.cloudfront_domain_name
+  type    = "CNAME"
+  proxied = false # DNS only
+  comment = "API Gateway custom domain"
+}
+
+# ACM証明書の検証（Cloudflare DNSレコードに依存）
+resource "aws_acm_certificate_validation" "note_app_cert_validation_with_cloudflare" {
+  count = var.enable_cloudflare_dns ? 1 : 0
+
+  provider        = aws.useast1
+  certificate_arn = aws_acm_certificate.note_app_cert.arn
+  validation_record_fqdns = [
+    cloudflare_record.acm_validation_note_app[0].hostname
+  ]
+
+  depends_on = [cloudflare_record.acm_validation_note_app]
+}
+
+resource "aws_acm_certificate_validation" "api_cert_validation_with_cloudflare" {
+  count = var.enable_cloudflare_dns ? 1 : 0
+
+  provider        = aws.useast1
+  certificate_arn = aws_acm_certificate.api_custom.arn
+  validation_record_fqdns = [
+    cloudflare_record.acm_validation_api[0].hostname
+  ]
+
+  depends_on = [cloudflare_record.acm_validation_api]
 }
 
 module "notes_table" {

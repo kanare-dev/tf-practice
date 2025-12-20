@@ -1,22 +1,98 @@
-# environments/dev/ の超最小構成例（2025/12/17 リセット）
+# environments/dev/ - 開発環境構成
 
-このディレクトリは現在、「S3 静的ウェブサイトホスティング」から始めて 1 つずつサーバーレス構成を発展させるための最小 Terraform 構成です。
+このディレクトリは、AWS + Cloudflareを使用したサーバーレス構成の開発環境です。
+
+## 🏗️ 構成内容
+
+### AWS リソース
+
+- **S3**: 静的Webサイトホスティング
+- **CloudFront**: CDN、HTTPS配信
+- **ACM証明書**: SSL/TLS証明書（us-east-1）
+- **API Gateway**: REST API（カスタムドメイン、レート制限）
+- **Lambda**: APIバックエンド（Python）
+- **DynamoDB**: NoSQLデータベース
+
+### Cloudflare（オプション）
+
+- **DNS管理**: Terraform Providerで自動管理可能
+  - ACM証明書検証用CNAMEレコード
+  - CloudFront向けCNAMEレコード
+  - API Gateway向けCNAMEレコード
 
 ## ファイル一覧
 
-- main.tf ... S3 バケット（静的 Web ホスティング）を皮切りにリソース定義を段階追加
-- variables.tf ... AWS リージョン変数（デフォルト: ap-northeast-1）
-- outputs.tf ... S3 のエンドポイントなど順次拡張
+- `main.tf` - メインリソース定義（AWS + Cloudflare）
+- `variables.tf` - 変数定義（AWS、Cloudflare設定）
+- `outputs.tf` - 出力定義（エンドポイント、DNS情報など）
+- `terraform.tfvars.example` - 設定例（これをコピーして使用）
+- `terraform.tfvars` - 実際の設定（.gitignoreで除外、手動作成）
 
 ## デプロイ手順
 
-```sh
-cd environments/dev
-terraform init
-terraform apply
+### 1. 設定ファイルの作成
+
+```bash
+cd terraform/environments/dev
+cp terraform.tfvars.example terraform.tfvars
 ```
 
-（AWS 認証情報が設定済みであること）
+### 2. terraform.tfvarsを編集
+
+```hcl
+# AWS設定
+aws_region = "ap-northeast-1"
+
+# Cloudflare DNS自動管理（オプション）
+enable_cloudflare_dns = true  # 自動管理する場合
+cloudflare_api_token  = "your-api-token-here"
+cloudflare_zone_id    = "your-zone-id-here"
+```
+
+**注意**: 
+- `terraform.tfvars`は`.gitignore`で除外されています
+- APIトークンなどの機密情報を含むため、絶対にGitにコミットしないでください
+
+### 3. Terraformを実行
+
+```bash
+terraform init    # プロバイダのダウンロード
+terraform plan    # 変更内容の確認
+terraform apply   # リソースの作成
+```
+
+### 4. 出力の確認
+
+```bash
+terraform output
+```
+
+主な出力：
+- `cloudfront_domain_name`: CloudFrontのドメイン
+- `api_gateway_url`: API GatewayのURL
+- `acm_dns_validation_options`: ACM証明書検証用DNS情報
+
+## Cloudflare DNS管理について
+
+### Option A: 手動管理（デフォルト）
+
+`terraform.tfvars`で`enable_cloudflare_dns = false`（またはコメントアウト）の場合：
+
+1. `terraform apply`を実行
+2. `terraform output`でDNS設定値を確認
+3. Cloudflareダッシュボードで手動設定
+
+詳細: [再構築ガイド](../../../docs/rebuild-guide.md)
+
+### Option B: 自動管理（推奨）
+
+`terraform.tfvars`で`enable_cloudflare_dns = true`の場合：
+
+1. Cloudflare APIトークンを取得
+2. `terraform.tfvars`に設定
+3. `terraform apply`で自動的にDNSレコードが作成される
+
+詳細: [Cloudflare Terraform導入ガイド](../../../docs/cloudflare-terraform-guide.md)
 
 ---
 
@@ -38,11 +114,53 @@ terraform apply
 
 ## 作成したリソースの削除方法
 
-Terraform で作成したリソースは、同じディレクトリで次のコマンドで削除できます。
-
-```sh
+```bash
 terraform destroy
 ```
 
-- 削除されるリソースの一覧と確認が求められ、"yes" で本当に削除が実行されます。
-- 配下にサブリソースがある場合は依存関係に注意してください。
+- 削除されるリソースの一覧と確認が求められ、"yes"で削除が実行されます
+- Cloudflare DNSレコードも自動管理している場合は一緒に削除されます
+- S3バケット内のファイルは事前削除が必要な場合があります
+
+### 再構築について
+
+`terraform destroy` → `terraform apply`でインフラを再構築する場合：
+
+- **Cloudflare自動管理あり**: 完全に自動復元
+- **Cloudflare手動管理**: DNSレコードの再設定が必要
+
+詳細: [再構築ガイド](../../../docs/rebuild-guide.md)
+
+---
+
+## 📚 関連ドキュメント
+
+- [デプロイガイド](../../../docs/deployment-guide.md) - 初回デプロイの詳細手順
+- [再構築ガイド](../../../docs/rebuild-guide.md) - destroy→apply時の手順
+- [Cloudflare Terraform導入ガイド](../../../docs/cloudflare-terraform-guide.md) - DNS自動管理の設定
+- [レート制限設定](../../../docs/rate-limiting-setup.md) - API Gatewayのレート制限
+- [ADR](../../../adr/) - 設計決定の記録
+
+---
+
+## 🔧 トラブルシューティング
+
+### エラー: "expected DNS record to not already be present"
+
+**原因**: Cloudflareに同じ名前のDNSレコードが既に存在
+
+**対処法**: 既存レコードをTerraformにインポート
+```bash
+terraform import 'cloudflare_record.note_app[0]' <zone-id>/<record-id>
+```
+
+詳細: [Cloudflare Terraform導入ガイド](../../../docs/cloudflare-terraform-guide.md)
+
+### エラー: "Certificate validation timeout"
+
+**原因**: ACM証明書の検証が完了していない
+
+**対処法**: 
+1. CloudflareのDNS設定を確認
+2. DNS伝播を待つ（最大30分）
+3. "Proxy status"が"DNS only"になっているか確認

@@ -1,0 +1,12 @@
+# AWS設定
+aws_region = "ap-northeast-1"
+
+# Cloudflare DNS管理（オプション）
+# Cloudflare Terraform Providerを使用してDNSレコードを自動管理する場合は以下を設定
+# enable_cloudflare_dns = true
+# cloudflare_api_token  = "your-cloudflare-api-token-here"
+# cloudflare_zone_id    = "your-cloudflare-zone-id-here"
+
+# デフォルトでは手動でCloudflare DNSを設定する必要があります
+enable_cloudflare_dns = false
+

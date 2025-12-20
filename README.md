@@ -16,6 +16,15 @@
 - **拡張性**: ライトな MVP(最小機能)から段階拡張へ対応
 - **実用性**: Markdown メモの作成・編集・検索可能
 
+### 🎯 このプロジェクトの特徴
+
+- ✅ **完全なIaC化**: AWS + Cloudflare DNSまでTerraformで管理
+- ✅ **再現性**: `terraform destroy` → `terraform apply` で完全復元
+- ✅ **本番環境レベル**: CloudFront + ACM証明書 + カスタムドメイン
+- ✅ **セキュリティ**: レート制限、DDoS対策、HTTPS強制
+- ✅ **モジュール設計**: 再利用可能なTerraformモジュール
+- ✅ **ドキュメント充実**: ADR、運用ガイド、トラブルシューティング
+
 ---
 
 ## システム全体アーキテクチャ
@@ -66,14 +75,26 @@
 
 ---
 
-## 利用 AWS サービス
+## 利用サービス
 
-- Cognito: ユーザー認証
-- API Gateway: REST API (Cognito 認可)
-- Lambda: API バックエンド
-- DynamoDB: NoSQL DB (NoteTable)
-- S3: 静的 Web&ファイルホスティング
-- CodeBuild/CodePipeline: CI/CD
+### AWS
+
+- **S3**: 静的 Web ホスティング
+- **CloudFront**: CDN、HTTPS配信（ACM証明書）
+- **API Gateway**: REST API（カスタムドメイン、レート制限）
+- **Lambda**: API バックエンド（Python）
+- **DynamoDB**: NoSQL DB（NoteTable）
+- **ACM**: SSL/TLS証明書管理
+- **Cognito**: ユーザー認証（予定）
+- **CodeBuild/CodePipeline**: CI/CD（予定）
+
+### Cloudflare（DNS管理）
+
+- **DNS**: ドメイン・サブドメイン管理
+- **Terraform Provider**: DNSレコードの自動管理（オプション）
+  - ACM証明書検証用CNAMEレコード
+  - CloudFront/API Gateway向けCNAMEレコード
+  - 詳細: [Cloudflare Terraform導入ガイド](docs/cloudflare-terraform-guide.md)
 
 ---
 
@@ -103,16 +124,32 @@ tf-practice/
 - [docs/getting-started.md](docs/getting-started.md): 初期セットアップ
 - [docs/deployment-guide.md](docs/deployment-guide.md): 詳細デプロイ&コスト注意
 - [docs/cicd-guide.md](docs/cicd-guide.md): CI/CD 運用ガイド
+- [docs/rebuild-guide.md](docs/rebuild-guide.md): インフラ再構築ガイド（destroy→apply時）
+- [docs/cloudflare-terraform-guide.md](docs/cloudflare-terraform-guide.md): Cloudflare DNS自動管理の導入
 
 ### セットアップ最短例
 
 ```bash
 cd terraform/environments/dev
 cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars を編集（AWS認証情報、Cloudflare設定など）
 terraform init
 terraform plan
 terraform apply
 ```
+
+#### Cloudflare DNS自動管理（オプション）
+
+デフォルトでは手動でCloudflare DNSを設定する必要がありますが、Terraform Providerを使用して完全自動化できます：
+
+```bash
+# terraform.tfvars に以下を追加
+enable_cloudflare_dns = true
+cloudflare_api_token  = "your-api-token"
+cloudflare_zone_id    = "your-zone-id"
+```
+
+詳細: [Cloudflare Terraform導入ガイド](docs/cloudflare-terraform-guide.md)
 
 ---
 
