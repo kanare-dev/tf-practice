@@ -1,8 +1,9 @@
 # terraform ディレクトリについて
 
-このディレクトリは AWSインフラ (S3, Lambda, Cognito, API Gateway など) をTerraformでIaC管理するために使用します。
+このディレクトリは AWS インフラ (S3, Lambda, Cognito, API Gateway など) を Terraform で IaC 管理するために使用します。
 
 ## 構成 (例)
+
 ```
 terraform/
 ├── environments/      # dev, prod, staging など実環境ごとの定義
@@ -11,6 +12,5 @@ terraform/
 ```
 
 - 具体的なサービス・リソースごとのサンプルは `modules/` を確認。
-- Lambda等の関数コードも `lambda-functions/`にまとめています。
-- 各ディレクトリでREADMEやサンプルに従ってご利用ください。
-
+- Lambda 等の関数コードも `lambda-functions/`にまとめています。
+- 各ディレクトリで README やサンプルに従ってご利用ください。
