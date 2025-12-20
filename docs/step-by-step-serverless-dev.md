@@ -81,24 +81,24 @@
 Terraform apply 後、以下のような curl コマンドで API の動作を確認できます（エンドポイント URL は outputs や AWS コンソールから取得）。
 
 ```bash
-# ノート一覧取得
-curl https://api.note-app.kanare.dev/notes
+# ノート一覧取得（日本語や整形表示もOK）
+curl https://api.note-app.kanare.dev/notes | jq
 
 # ノート新規作成
 curl -X POST https://api.note-app.kanare.dev/notes \
   -H "Content-Type: application/json" \
-  -d '{"title":"test note","content":"内容"}'
+  -d '{"title":"test note","content":"内容"}' | jq
 
 # ノート詳細取得
-curl https://api.note-app.kanare.dev/notes/abc123
+curl https://api.note-app.kanare.dev/notes/abc123 | jq
 
 # ノート更新
 curl -X PUT https://api.note-app.kanare.dev/notes/abc123 \
   -H "Content-Type: application/json" \
-  -d '{"title":"更新タイトル","content":"更新内容"}'
+  -d '{"title":"更新タイトル","content":"更新内容"}' | jq
 
 # ノート削除
-curl -X DELETE https://api.note-app.kanare.dev/notes/abc123
+curl -X DELETE https://api.note-app.kanare.dev/notes/abc123 | jq
 ```
 
 > ※ <your-api-id> は実際の API Gateway の ID または terraform output で確認した URL に読み替えてください。

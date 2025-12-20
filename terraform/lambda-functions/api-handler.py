@@ -18,20 +18,66 @@ def response(status_code, body):
 def handler(event, context):
     method = event.get("httpMethod")
     path = event.get("path", "")
+    user_id = "dummy-user"  # 本来はCognito連携などで取得推奨
 
+    # 一覧取得
     if method == "GET" and path == "/notes":
-        return response(200, {"message": "ノート一覧取得 (仮)"})
+        items = table.query(
+            KeyConditionExpression=boto3.dynamodb.conditions.Key('userId').eq(user_id)
+        ).get('Items', [])
+        return response(200, {"notes": items})
+
+    # 新規作成
     elif method == "POST" and path == "/notes":
-        return response(201, {"message": "ノート新規作成 (仮)"})
+        body = json.loads(event.get('body', '{}'))
+        import uuid
+        note_id = str(uuid.uuid4())
+        now = datetime.utcnow().isoformat()
+        item = {
+            "userId": user_id,
+            "noteId": note_id,
+            "title": body.get("title", ""),
+            "content": body.get("content", ""),
+            "createdAt": now,
+            "updatedAt": now
+        }
+        table.put_item(Item=item)
+        return response(201, {"item": item})
+
+    # ノート取得
     elif method == "GET" and path.startswith("/notes/"):
         note_id = path.split("/notes/")[-1]
-        return response(200, {"message": f"ノート取得（仮）: {note_id}"})
+        result = table.get_item(Key={"userId": user_id, "noteId": note_id})
+        item = result.get("Item")
+        if item:
+            return response(200, item)
+        else:
+            return response(404, {"error": "Not found"})
+
+    # ノート更新
     elif method == "PUT" and path.startswith("/notes/"):
         note_id = path.split("/notes/")[-1]
-        return response(200, {"message": f"ノート更新（仮）: {note_id}"})
+        body = json.loads(event.get('body', '{}'))
+        now = datetime.utcnow().isoformat()
+        result = table.update_item(
+            Key={"userId": user_id, "noteId": note_id},
+            UpdateExpression="SET #t = :title, #c = :content, #u = :u",
+            ExpressionAttributeNames={"#t": "title", "#c": "content", "#u": "updatedAt"},
+            ExpressionAttributeValues={
+                ":title": body.get("title", ""),
+                ":content": body.get("content", ""),
+                ":u": now,
+            },
+            ReturnValues="ALL_NEW"
+        )
+        return response(200, result.get("Attributes"))
+
+    # ノート削除
     elif method == "DELETE" and path.startswith("/notes/"):
         note_id = path.split("/notes/")[-1]
-        return response(200, {"message": f"ノート削除（仮）: {note_id}"})
+        table.delete_item(Key={"userId": user_id, "noteId": note_id})
+        return response(204, {})
+
     else:
         return response(404, {"error": "Not Found"})
 

@@ -102,12 +102,31 @@ resource "aws_cloudfront_distribution" "note_app" {
 }
 
 module "lambda_api_handler" {
-  source                = "../../modules/lambda"
-  function_name         = "note-api-handler-dev"
-  source_file           = "${path.root}/../../lambda-functions/api-handler.py"
-  handler               = "api-handler.handler"
-  runtime               = "python3.11"
-  environment_variables = {}
+  source        = "../../modules/lambda"
+  function_name = "note-api-handler-dev"
+  source_file   = "${path.root}/../../lambda-functions/api-handler.py"
+  handler       = "api-handler.handler"
+  runtime       = "python3.11"
+  environment_variables = {
+    DYNAMODB_TABLE = module.notes_table.table_name
+  }
+  additional_policy_json = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = module.notes_table.table_arn
+      }
+    ]
+  })
   tags = {
     Name   = "dev-tfpractice-lambda-api"
     system = "tfpractice"
@@ -157,3 +176,18 @@ output "api_custom_domain_target" {
   description = "API Gatewayカスタムドメイン向けCNAME先"
 }
 
+module "notes_table" {
+  source                        = "../../modules/dynamodb"
+  table_name                    = "NotesTable-dev"
+  hash_key                      = "userId"
+  hash_key_type                 = "S"
+  range_key                     = "noteId"
+  range_key_type                = "S"
+  billing_mode                  = "PAY_PER_REQUEST"
+  enable_point_in_time_recovery = true
+  tags = {
+    Name   = "dev-tfpractice-dynamodb-notes"
+    system = "tfpractice"
+    env    = "dev"
+  }
+}
