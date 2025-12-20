@@ -11,7 +11,12 @@ table = dynamodb.Table(table_name) if table_name else None
 def response(status_code, body):
     return {
         "statusCode": status_code,
-        "headers": {"Content-Type": "application/json"},
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type"
+        },
         "body": json.dumps(body)
     }
 
@@ -19,6 +24,10 @@ def handler(event, context):
     method = event.get("httpMethod")
     path = event.get("path", "")
     user_id = "dummy-user"  # 本来はCognito連携などで取得推奨
+
+    # CORS プリフライトリクエスト対応
+    if method == "OPTIONS":
+        return response(200, {})
 
     # 一覧取得
     if method == "GET" and path == "/notes":
