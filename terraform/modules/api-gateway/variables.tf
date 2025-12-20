@@ -61,3 +61,34 @@ variable "tags" {
   default     = {}
 }
 
+# レート制限設定
+variable "enable_throttling" {
+  description = "スロットリング（レート制限）を有効化するか"
+  type        = bool
+  default     = false
+}
+
+variable "throttle_burst_limit" {
+  description = "バースト時の最大リクエスト数"
+  type        = number
+  default     = 100
+}
+
+variable "throttle_rate_limit" {
+  description = "1秒あたりの平均リクエスト数"
+  type        = number
+  default     = 50
+}
+
+variable "quota_limit" {
+  description = "期間あたりの最大リクエスト数（0で無制限）"
+  type        = number
+  default     = 10000
+}
+
+variable "quota_period" {
+  description = "クォータ期間（DAY, WEEK, MONTH）"
+  type        = string
+  default     = "DAY"
+}
+

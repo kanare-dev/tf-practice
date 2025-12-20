@@ -119,3 +119,52 @@ resource "aws_api_gateway_method_settings" "main" {
   }
 }
 
+# Usage Plan（レート制限とクォータ設定）
+resource "aws_api_gateway_usage_plan" "main" {
+  count = var.enable_throttling ? 1 : 0
+
+  name        = "${var.api_name}-usage-plan"
+  description = "Usage plan for ${var.api_name} with throttling and quota"
+
+  api_stages {
+    api_id = aws_api_gateway_rest_api.main.id
+    stage  = aws_api_gateway_stage.main.stage_name
+  }
+
+  # スロットリング設定
+  throttle_settings {
+    burst_limit = var.throttle_burst_limit
+    rate_limit  = var.throttle_rate_limit
+  }
+
+  # クォータ設定（0の場合は設定しない）
+  dynamic "quota_settings" {
+    for_each = var.quota_limit > 0 ? [1] : []
+    content {
+      limit  = var.quota_limit
+      period = var.quota_period
+    }
+  }
+
+  tags = var.tags
+}
+
+# APIキー（Usage Planに必要）
+resource "aws_api_gateway_api_key" "main" {
+  count = var.enable_throttling ? 1 : 0
+
+  name    = "${var.api_name}-key"
+  enabled = true
+
+  tags = var.tags
+}
+
+# Usage PlanとAPIキーの関連付け
+resource "aws_api_gateway_usage_plan_key" "main" {
+  count = var.enable_throttling ? 1 : 0
+
+  key_id        = aws_api_gateway_api_key.main[0].id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.main[0].id
+}
+

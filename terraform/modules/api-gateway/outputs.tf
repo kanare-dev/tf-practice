@@ -18,3 +18,19 @@ output "execution_arn" {
   value       = aws_api_gateway_rest_api.main.execution_arn
 }
 
+output "usage_plan_id" {
+  description = "Usage Plan ID（レート制限が有効な場合）"
+  value       = var.enable_throttling ? aws_api_gateway_usage_plan.main[0].id : null
+}
+
+output "api_key_id" {
+  description = "API Key ID（レート制限が有効な場合）"
+  value       = var.enable_throttling ? aws_api_gateway_api_key.main[0].id : null
+}
+
+output "api_key_value" {
+  description = "API Key値（レート制限が有効な場合）"
+  value       = var.enable_throttling ? aws_api_gateway_api_key.main[0].value : null
+  sensitive   = true
+}
+

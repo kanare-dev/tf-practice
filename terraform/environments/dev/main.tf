@@ -141,6 +141,14 @@ module "api_gateway" {
   lambda_invoke_arn    = module.lambda_api_handler.function_invoke_arn
   lambda_function_name = module.lambda_api_handler.function_name
   authorization_type   = "NONE"
+  
+  # レート制限設定を有効化
+  enable_throttling     = true
+  throttle_burst_limit  = 100   # バースト時の最大リクエスト数
+  throttle_rate_limit   = 50    # 1秒あたりの平均リクエスト数
+  quota_limit           = 10000 # 1日あたりの最大リクエスト数
+  quota_period          = "DAY"
+  
   tags = {
     Name   = "dev-tfpractice-apigw"
     system = "tfpractice"
