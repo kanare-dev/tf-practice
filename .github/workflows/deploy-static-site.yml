@@ -6,6 +6,8 @@ on:
       - main
       - master
       - develop
+    paths:
+      - "frontend/**"
   workflow_dispatch: # 手動実行対応を追加
 
 env:
