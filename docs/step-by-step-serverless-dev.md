@@ -82,23 +82,23 @@ Terraform apply 後、以下のような curl コマンドで API の動作を�
 
 ```bash
 # ノート一覧取得
-curl https://<your-api-id>.execute-api.ap-northeast-1.amazonaws.com/dev/notes
+curl https://api.note-app.kanare.dev/notes
 
 # ノート新規作成
-curl -X POST https://<your-api-id>.execute-api.ap-northeast-1.amazonaws.com/dev/notes \
+curl -X POST https://api.note-app.kanare.dev/notes \
   -H "Content-Type: application/json" \
   -d '{"title":"test note","content":"内容"}'
 
 # ノート詳細取得
-curl https://<your-api-id>.execute-api.ap-northeast-1.amazonaws.com/dev/notes/abc123
+curl https://api.note-app.kanare.dev/notes/abc123
 
 # ノート更新
-curl -X PUT https://<your-api-id>.execute-api.ap-northeast-1.amazonaws.com/dev/notes/abc123 \
+curl -X PUT https://api.note-app.kanare.dev/notes/abc123 \
   -H "Content-Type: application/json" \
   -d '{"title":"更新タイトル","content":"更新内容"}'
 
 # ノート削除
-curl -X DELETE https://<your-api-id>.execute-api.ap-northeast-1.amazonaws.com/dev/notes/abc123
+curl -X DELETE https://api.note-app.kanare.dev/notes/abc123
 ```
 
 > ※ <your-api-id> は実際の API Gateway の ID または terraform output で確認した URL に読み替えてください。
