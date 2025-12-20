@@ -8,6 +8,7 @@ on:
       - develop
     paths:
       - "frontend/**"
+      - ".github/workflows/**"
   workflow_dispatch: # 手動実行対応を追加
 
 env:
