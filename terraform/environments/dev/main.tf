@@ -41,7 +41,6 @@ resource "aws_acm_certificate" "note_app_cert" {
   domain_name               = "note-app.kanare.dev"
   validation_method         = "DNS"
   subject_alternative_names = []
-
   lifecycle {
     create_before_destroy = true
   }
@@ -59,7 +58,6 @@ resource "aws_cloudfront_distribution" "note_app" {
   is_ipv6_enabled = true
   comment         = "note-app.kanare.dev static site"
   aliases         = ["note-app.kanare.dev"]
-
   origin {
     domain_name = module.s3_static_web.website_endpoint
     origin_id   = "S3-note-app-static"
@@ -98,6 +96,34 @@ resource "aws_cloudfront_distribution" "note_app" {
   }
   tags = {
     Name   = "dev-tfpractice-cloudfront"
+    system = "tfpractice"
+    env    = "dev"
+  }
+}
+
+module "lambda_api_handler" {
+  source                = "../../modules/lambda"
+  function_name         = "note-api-handler-dev"
+  source_file           = "${path.root}/../../lambda-functions/api-handler.py"
+  handler               = "api-handler.handler"
+  runtime               = "python3.11"
+  environment_variables = {}
+  tags = {
+    Name   = "dev-tfpractice-lambda-api"
+    system = "tfpractice"
+    env    = "dev"
+  }
+}
+
+module "api_gateway" {
+  source               = "../../modules/api-gateway"
+  api_name             = "note-api-gateway-dev"
+  api_description      = "Notes CRUD API"
+  lambda_invoke_arn    = module.lambda_api_handler.function_invoke_arn
+  lambda_function_name = module.lambda_api_handler.function_name
+  authorization_type   = "NONE"
+  tags = {
+    Name   = "dev-tfpractice-apigw"
     system = "tfpractice"
     env    = "dev"
   }
