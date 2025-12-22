@@ -7,7 +7,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { FaRegCopyright } from "react-icons/fa";
 
-const endpoint = "https://api.note-app.kanare.dev/notes";
+// 環境変数からAPIベースURLを取得
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://api.note-app.kanare.dev";
+const endpoint = `${API_BASE_URL}/notes`;
 
 export default function App() {
   const { toast } = useToast();
