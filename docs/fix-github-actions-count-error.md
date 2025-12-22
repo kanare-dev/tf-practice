@@ -2,7 +2,7 @@
 
 ## 問題の概要
 
-ローカルでは`terraform plan`が成功するのに、GitHub Actionsでは以下のエラーが発生していました：
+ローカルでは`terraform plan`が成功するのに、GitHub Actions では以下のエラーが発生していました：
 
 ```
 Error: Invalid count argument
@@ -37,10 +37,10 @@ module "api_gateway" {
 
 ### なぜローカルでは動作していたのか
 
-- **ローカル環境**: 既存のTerraform stateファイルがあり、`module.cognito.user_pool_arn`の値が既知だった
-- **GitHub Actions**: 新しい環境または初回実行時、stateファイルがないため値が未確定だった
+- **ローカル環境**: 既存の Terraform state ファイルがあり、`module.cognito.user_pool_arn`の値が既知だった
+- **GitHub Actions**: 新しい環境または初回実行時、state ファイルがないため値が未確定だった
 
-Terraformは`count`を評価する際、plan段階で値を決定する必要があります。しかし、`module.cognito.user_pool_arn`は`apply`を実行しないと確定しないため、エラーが発生していました。
+Terraform は`count`を評価する際、plan 段階で値を決定する必要があります。しかし、`module.cognito.user_pool_arn`は`apply`を実行しないと確定しないため、エラーが発生していました。
 
 ## 解決策
 
@@ -59,7 +59,7 @@ variable "enable_cognito_authorizer" {
 }
 ```
 
-#### 2. countの条件式を変更
+#### 2. count の条件式を変更
 
 ```hcl
 # modules/api-gateway/main.tf（変更前）
@@ -75,15 +75,15 @@ resource "aws_api_gateway_authorizer" "cognito" {
 }
 ```
 
-#### 3. authorizer_idの参照も更新
+#### 3. authorizer_id の参照も更新
 
 ```hcl
 # 変更前
-authorizer_id = var.authorization_type == "COGNITO_USER_POOLS" && var.cognito_user_pool_arn != null ? 
+authorizer_id = var.authorization_type == "COGNITO_USER_POOLS" && var.cognito_user_pool_arn != null ?
                 aws_api_gateway_authorizer.cognito[0].id : var.authorizer_id
 
 # 変更後
-authorizer_id = var.authorization_type == "COGNITO_USER_POOLS" && var.enable_cognito_authorizer ? 
+authorizer_id = var.authorization_type == "COGNITO_USER_POOLS" && var.enable_cognito_authorizer ?
                 aws_api_gateway_authorizer.cognito[0].id : var.authorizer_id
 ```
 
@@ -103,17 +103,20 @@ module "api_gateway" {
 ## 変更されたファイル
 
 1. `terraform/modules/api-gateway/variables.tf`
+
    - `enable_cognito_authorizer`変数を追加
 
 2. `terraform/modules/api-gateway/main.tf`
+
    - `aws_api_gateway_authorizer.cognito`の`count`を変更
-   - `authorizer_id`の条件式を変更（2箇所）
+   - `authorizer_id`の条件式を変更（2 箇所）
 
 3. `terraform/environments/dev/main.tf`
+
    - `enable_cognito_authorizer = true`を追加
 
 4. `terraform/modules/api-gateway/README.md`
-   - 使用例とInputsテーブルを更新
+   - 使用例と Inputs テーブルを更新
 
 ## 動作確認
 
@@ -126,9 +129,9 @@ terraform validate
 
 **結果**: ✅ Success! The configuration is valid.
 
-### GitHub Actionsでの確認
+### GitHub Actions での確認
 
-次回のpush/PRで、以下のジョブが成功するはずです：
+次回の push/PR で、以下のジョブが成功するはずです：
 
 1. `terraform-fmt` - フォーマットチェック
 2. `terraform-validate` - 構文検証
@@ -136,7 +139,7 @@ terraform validate
 
 ## 他の環境への適用
 
-もし他の環境（prod, stagingなど）でもCognito認証を使用している場合、同様の変更が必要です：
+もし他の環境（prod, staging など）でも Cognito 認証を使用している場合、同様の変更が必要です：
 
 ```hcl
 # terraform/environments/prod/main.tf など
@@ -151,16 +154,18 @@ module "api_gateway" {
 
 ## ベストプラクティス
 
-### count使用時の注意点
+### count 使用時の注意点
 
 `count`や`for_each`を使用する際は、以下のルールに従ってください：
 
 ❌ **避けるべき**: 計算値（computed values）への依存
+
 ```hcl
 count = var.some_arn != null ? 1 : 0  # some_arnが他のリソースから来る場合
 ```
 
 ✅ **推奨**: 明示的なブール変数
+
 ```hcl
 count = var.enable_feature ? 1 : 0
 ```
@@ -169,8 +174,8 @@ count = var.enable_feature ? 1 : 0
 
 1. **予測可能**: `terraform plan`時に必ず値が確定している
 2. **明示的**: 設定を見ただけで何が作成されるか分かる
-3. **ポータブル**: stateの有無に関わらず動作する
-4. **CI/CD対応**: GitHub Actionsなどの自動化環境でも確実に動作
+3. **ポータブル**: state の有無に関わらず動作する
+4. **CI/CD 対応**: GitHub Actions などの自動化環境でも確実に動作
 
 ## 参考資料
 
@@ -190,12 +195,11 @@ count = var.enable_feature ? 1 : 0
 
 この変更は既存のリソースに影響を与えません：
 
-- `enable_cognito_authorizer = true`を指定すれば、従来通りAuthorizerが作成されます
-- Terraform stateは変わらず、既存リソースは維持されます
+- `enable_cognito_authorizer = true`を指定すれば、従来通り Authorizer が作成されます
+- Terraform state は変わらず、既存リソースは維持されます
 
 ---
 
 **作成日**: 2025-12-22  
 **対象バージョン**: Terraform 1.5.0+  
-**検証環境**: dev環境（terraform/environments/dev）
-
+**検証環境**: dev 環境（terraform/environments/dev）
