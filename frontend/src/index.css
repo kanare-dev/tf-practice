@@ -154,3 +154,8 @@
     transform: translateY(0);
   }
 }
+
+/* Center Authenticator component */
+[data-amplify-authenticator] {
+  @apply flex min-h-screen items-center justify-center;
+}
