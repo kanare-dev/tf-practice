@@ -45,6 +45,9 @@ jobs:
           npm run build
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://api.note-app.kanare.dev' }}
+          VITE_AWS_REGION: ${{ secrets.VITE_AWS_REGION || 'ap-northeast-1' }}
+          VITE_USER_POOL_ID: ${{ secrets.VITE_USER_POOL_ID }}
+          VITE_USER_POOL_CLIENT_ID: ${{ secrets.VITE_USER_POOL_CLIENT_ID }}
 
       - name: Sync static files to S3
         run: aws s3 sync frontend/dist/ s3://${{ env.BUCKET_NAME }}/ --delete
