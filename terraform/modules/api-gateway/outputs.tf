@@ -34,3 +34,8 @@ output "api_key_value" {
   sensitive   = true
 }
 
+output "authorizer_id" {
+  description = "Cognito Authorizer ID"
+  value       = var.cognito_user_pool_arn != null ? aws_api_gateway_authorizer.cognito[0].id : null
+}
+

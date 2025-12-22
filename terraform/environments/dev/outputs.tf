@@ -38,3 +38,19 @@ output "dynamodb_table_name" {
   description = "DynamoDB Table Name"
   value       = module.notes_table.table_name
 }
+
+# Cognito
+output "cognito_user_pool_id" {
+  description = "Cognito User Pool ID"
+  value       = module.cognito.user_pool_id
+}
+
+output "cognito_user_pool_arn" {
+  description = "Cognito User Pool ARN"
+  value       = module.cognito.user_pool_arn
+}
+
+output "cognito_user_pool_client_id" {
+  description = "Cognito User Pool Client ID (フロントエンドで使用)"
+  value       = module.cognito.user_pool_client_id
+}

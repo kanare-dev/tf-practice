@@ -15,7 +15,7 @@ def response(status_code, body):
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type"
+            "Access-Control-Allow-Headers": "Content-Type,Authorization"
         },
         "body": json.dumps(body)
     }
@@ -23,7 +23,14 @@ def response(status_code, body):
 def handler(event, context):
     method = event.get("httpMethod")
     path = event.get("path", "")
-    user_id = "dummy-user"  # 本来はCognito連携などで取得推奨
+
+    # Cognito認証からuserIdを取得（API Gateway Authorizerが検証済み）
+    try:
+        user_id = event['requestContext']['authorizer']['claims']['sub']
+    except (KeyError, TypeError):
+        # 後方互換性のためdummy-userを使用（本番環境では削除を推奨）
+        user_id = "dummy-user"
+        print("Warning: No Cognito claims found, using dummy-user for backward compatibility")
 
     # CORS プリフライトリクエスト対応
     if method == "OPTIONS":

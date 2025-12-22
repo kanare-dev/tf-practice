@@ -27,6 +27,11 @@ resource "aws_cognito_user_pool" "main" {
   # 多要素認証
   mfa_configuration = var.mfa_configuration
 
+  # TOTP (ソフトウェアトークン) MFAを有効化
+  software_token_mfa_configuration {
+    enabled = true
+  }
+
   # タグ
   tags = var.tags
 
@@ -67,6 +72,7 @@ resource "aws_cognito_user_pool_client" "main" {
   callback_urls                        = var.callback_urls
   logout_urls                          = var.logout_urls
   allowed_oauth_flows_user_pool_client = var.allowed_oauth_flows_user_pool_client
+  allowed_oauth_flows                  = var.allowed_oauth_flows
   allowed_oauth_scopes                 = var.allowed_oauth_scopes
   supported_identity_providers         = var.supported_identity_providers
 }

@@ -139,6 +139,12 @@ variable "allowed_oauth_flows_user_pool_client" {
   default     = true
 }
 
+variable "allowed_oauth_flows" {
+  description = "許可するOAuthフロー"
+  type        = list(string)
+  default     = ["code", "implicit"]
+}
+
 variable "allowed_oauth_scopes" {
   description = "許可するOAuthスコープ"
   type        = list(string)

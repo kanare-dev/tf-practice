@@ -19,6 +19,17 @@ resource "aws_api_gateway_rest_api" "main" {
   tags = var.tags
 }
 
+# Cognito User Pool Authorizer
+resource "aws_api_gateway_authorizer" "cognito" {
+  count = var.cognito_user_pool_arn != null ? 1 : 0
+
+  name            = "${var.api_name}-cognito-authorizer"
+  rest_api_id     = aws_api_gateway_rest_api.main.id
+  type            = "COGNITO_USER_POOLS"
+  provider_arns   = [var.cognito_user_pool_arn]
+  identity_source = "method.request.header.Authorization"
+}
+
 # API Gateway Resource（ルートパス）
 resource "aws_api_gateway_resource" "proxy" {
   rest_api_id = aws_api_gateway_rest_api.main.id
@@ -32,7 +43,7 @@ resource "aws_api_gateway_method" "proxy" {
   resource_id   = aws_api_gateway_resource.proxy.id
   http_method   = "ANY"
   authorization = var.authorization_type
-  authorizer_id = var.authorizer_id
+  authorizer_id = var.authorization_type == "COGNITO_USER_POOLS" && var.cognito_user_pool_arn != null ? aws_api_gateway_authorizer.cognito[0].id : var.authorizer_id
 }
 
 # Lambda統合
@@ -52,7 +63,7 @@ resource "aws_api_gateway_method" "proxy_root" {
   resource_id   = aws_api_gateway_rest_api.main.root_resource_id
   http_method   = "ANY"
   authorization = var.authorization_type
-  authorizer_id = var.authorizer_id
+  authorizer_id = var.authorization_type == "COGNITO_USER_POOLS" && var.cognito_user_pool_arn != null ? aws_api_gateway_authorizer.cognito[0].id : var.authorizer_id
 }
 
 resource "aws_api_gateway_integration" "lambda_root" {

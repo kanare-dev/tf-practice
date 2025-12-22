@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Authenticator } from '@aws-amplify/ui-react';
+import { signOut } from 'aws-amplify/auth';
+import '@aws-amplify/ui-react/styles.css';
+import './lib/amplify-config';
+import { authenticatedFetch } from './lib/api-client';
 import { NotesList } from "@/components/notes-list";
 import { NoteForm, type Note } from "@/components/note-form";
 import { SearchBar } from "@/components/search-bar";
@@ -7,11 +12,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { FaRegCopyright } from "react-icons/fa";
 
-// 環境変数からAPIベースURLを取得
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://api.note-app.kanare.dev";
-const endpoint = `${API_BASE_URL}/notes`;
+const endpoint = "/notes";
 
-export default function App() {
+function AppContent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,7 +24,7 @@ export default function App() {
   const { data, isLoading, error } = useQuery<{ notes: Note[] }>({
     queryKey: ["notes"],
     queryFn: async () => {
-      const res = await fetch(endpoint);
+      const res = await authenticatedFetch(endpoint);
       if (!res.ok) throw new Error("Failed to fetch notes");
       return res.json();
     },
@@ -36,9 +39,8 @@ export default function App() {
       title: string;
       content: string;
     }) => {
-      const res = await fetch(endpoint, {
+      const res = await authenticatedFetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, content }),
       });
       if (!res.ok) throw new Error("Failed to add note");
@@ -71,9 +73,8 @@ export default function App() {
       title: string;
       content: string;
     }) => {
-      const res = await fetch(`${endpoint}/${noteId}`, {
+      const res = await authenticatedFetch(`${endpoint}/${noteId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, content }),
       });
       if (!res.ok) throw new Error("Failed to update note");
@@ -99,7 +100,9 @@ export default function App() {
   // Delete note mutation
   const deleteMutation = useMutation({
     mutationFn: async (noteId: string) => {
-      const res = await fetch(`${endpoint}/${noteId}`, { method: "DELETE" });
+      const res = await authenticatedFetch(`${endpoint}/${noteId}`, {
+        method: "DELETE"
+      });
       if (!res.ok) throw new Error("Failed to delete note");
     },
     onSuccess: () => {
@@ -132,6 +135,14 @@ export default function App() {
     setEditingNote(null);
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   // Filter notes based on search query
   const filteredNotes = data?.notes.filter(
     (note) =>
@@ -144,6 +155,14 @@ export default function App() {
       <div className="mx-auto max-w-5xl px-4 py-8 md:py-12">
         {/* Header */}
         <header className="mb-12 text-center">
+          <div className="mb-4 flex justify-end">
+            <button
+              onClick={handleSignOut}
+              className="rounded-md bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
+            >
+              サインアウト
+            </button>
+          </div>
           <div className="mb-3 inline-flex items-center justify-center rounded-full bg-accent/10 px-4 py-1.5">
             <span className="text-sm font-medium text-accent">
               Productivity Tool
@@ -221,5 +240,16 @@ export default function App() {
       </div>
       <Toaster />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Authenticator
+      signUpAttributes={['email']}
+      loginMechanisms={['email']}
+    >
+      {() => <AppContent />}
+    </Authenticator>
   );
 }

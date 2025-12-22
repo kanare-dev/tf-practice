@@ -148,7 +148,10 @@ module "api_gateway" {
   api_description      = "Notes CRUD API"
   lambda_invoke_arn    = module.lambda_api_handler.function_invoke_arn
   lambda_function_name = module.lambda_api_handler.function_name
-  authorization_type   = "NONE"
+
+  # Cognito認証設定
+  authorization_type     = "COGNITO_USER_POOLS"
+  cognito_user_pool_arn  = module.cognito.user_pool_arn
 
   # レート制限設定を有効化
   enable_throttling    = true
@@ -267,6 +270,59 @@ resource "aws_acm_certificate_validation" "api_cert_validation_with_cloudflare" 
   ]
 
   depends_on = [cloudflare_record.acm_validation_api]
+}
+
+# ========================================
+# Cognito User Pool
+# ========================================
+
+module "cognito" {
+  source = "../../modules/cognito"
+
+  user_pool_name        = "note-app-user-pool-dev"
+  user_pool_client_name = "note-app-web-client"
+
+  # パスワードポリシー
+  password_min_length        = 8
+  password_require_lowercase = true
+  password_require_uppercase = true
+  password_require_numbers   = true
+  password_require_symbols   = false
+
+  # ユーザー名属性（emailでログイン）
+  username_attributes      = ["email"]
+  auto_verified_attributes = ["email"]
+
+  # MFA設定（OPTIONAL: ユーザー任意）
+  mfa_configuration = "OPTIONAL"
+
+  # 認証フロー
+  explicit_auth_flows = [
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_USER_PASSWORD_AUTH"
+  ]
+
+  # トークン有効期限
+  access_token_validity  = 1  # 1時間
+  id_token_validity      = 1  # 1時間
+  refresh_token_validity = 30 # 30日
+
+  # コールバックURL
+  callback_urls = [
+    "https://note-app.kanare.dev",
+    "http://localhost:5173"
+  ]
+  logout_urls = [
+    "https://note-app.kanare.dev",
+    "http://localhost:5173"
+  ]
+
+  tags = {
+    Name   = "dev-tfpractice-cognito"
+    system = "tfpractice"
+    env    = "dev"
+  }
 }
 
 module "notes_table" {

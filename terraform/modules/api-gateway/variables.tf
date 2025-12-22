@@ -43,6 +43,12 @@ variable "authorizer_id" {
   default     = null
 }
 
+variable "cognito_user_pool_arn" {
+  description = "Cognito User Pool ARN（COGNITO_USER_POOLS認証用）"
+  type        = string
+  default     = null
+}
+
 variable "enable_metrics" {
   description = "CloudWatchメトリクスを有効化するか"
   type        = bool
