@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        environment: [dev]
+        environment: [dev, prod]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -56,9 +56,24 @@ jobs:
         working-directory: terraform/environments/${{ matrix.environment }}
         run: terraform init -backend=false
 
+      - name: Set environment variables for validation
+        id: set-validate-vars
+        run: |
+          if [ "${{ matrix.environment }}" == "dev" ]; then
+            echo "domain_name=dev.note-app.kanare.dev" >> $GITHUB_OUTPUT
+            echo "api_domain_name=api-dev.note-app.kanare.dev" >> $GITHUB_OUTPUT
+          else
+            echo "domain_name=note-app.kanare.dev" >> $GITHUB_OUTPUT
+            echo "api_domain_name=api.note-app.kanare.dev" >> $GITHUB_OUTPUT
+          fi
+
       - name: Terraform Validate
         working-directory: terraform/environments/${{ matrix.environment }}
         env:
+          # 必須変数（ダミー値）
+          TF_VAR_env: ${{ matrix.environment }}
+          TF_VAR_domain_name: ${{ steps.set-validate-vars.outputs.domain_name }}
+          TF_VAR_api_domain_name: ${{ steps.set-validate-vars.outputs.api_domain_name }}
           # Cloudflare設定（オプション）
           TF_VAR_enable_cloudflare_dns: "false"
           TF_VAR_cloudflare_api_token: "dummy"
@@ -72,7 +87,7 @@ jobs:
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     strategy:
       matrix:
-        environment: [dev]
+        environment: [dev, prod]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -93,13 +108,28 @@ jobs:
         working-directory: terraform/environments/${{ matrix.environment }}
         run: terraform init
 
+      - name: Set environment variables
+        id: set-env-vars
+        run: |
+          if [ "${{ matrix.environment }}" == "dev" ]; then
+            echo "domain_name=dev.note-app.kanare.dev" >> $GITHUB_OUTPUT
+            echo "api_domain_name=api-dev.note-app.kanare.dev" >> $GITHUB_OUTPUT
+          else
+            echo "domain_name=note-app.kanare.dev" >> $GITHUB_OUTPUT
+            echo "api_domain_name=api.note-app.kanare.dev" >> $GITHUB_OUTPUT
+          fi
+
       - name: Terraform Plan
         working-directory: terraform/environments/${{ matrix.environment }}
         env:
+          # 必須変数
+          TF_VAR_env: ${{ matrix.environment }}
+          TF_VAR_domain_name: ${{ steps.set-env-vars.outputs.domain_name }}
+          TF_VAR_api_domain_name: ${{ steps.set-env-vars.outputs.api_domain_name }}
           # Cloudflare設定（オプション：DNS自動管理を有効にする場合）
           TF_VAR_enable_cloudflare_dns: ${{ secrets.ENABLE_CLOUDFLARE_DNS || 'false' }}
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
         run: terraform plan -out=tfplan
 
       - name: Comment PR
