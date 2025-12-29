@@ -28,6 +28,18 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
+# ローカル変数: ドメイン名から部分文字列を抽出
+locals {
+  # ベースドメインを抽出（最後の2パート: "kanare.dev"）
+  domain_parts = split(".", var.domain_name)
+  base_domain  = join(".", slice(local.domain_parts, length(local.domain_parts) - 2, length(local.domain_parts)))
+
+  # サブドメイン部分を抽出（ベースドメインを除去）
+  # 例: "note-app.kanare.dev" → "note-app"
+  cloudfront_subdomain = trimsuffix(var.domain_name, ".${local.base_domain}")
+  api_subdomain        = trimsuffix(var.api_domain_name, ".${local.base_domain}")
+}
+
 module "s3_static_web" {
   source                          = "../../modules/s3"
   bucket_name                     = var.domain_name
@@ -247,7 +259,7 @@ resource "cloudflare_record" "note_app" {
   count = var.enable_cloudflare_dns ? 1 : 0
 
   zone_id = var.cloudflare_zone_id
-  name    = "note-app"
+  name    = local.cloudfront_subdomain
   value   = aws_cloudfront_distribution.note_app.domain_name
   type    = "CNAME"
   proxied = false # DNS only
@@ -259,7 +271,7 @@ resource "cloudflare_record" "api_note_app" {
   count = var.enable_cloudflare_dns ? 1 : 0
 
   zone_id = var.cloudflare_zone_id
-  name    = "api.note-app"
+  name    = local.api_subdomain
   value   = aws_api_gateway_domain_name.api_custom.cloudfront_domain_name
   type    = "CNAME"
   proxied = false # DNS only
