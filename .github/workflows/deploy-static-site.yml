@@ -85,14 +85,32 @@ jobs:
           cd terraform/environments/${{ steps.set-env.outputs.environment }}
 
           # Terraform init (backend設定を読み込むため)
-          terraform init > /dev/null 2>&1 || true
+          echo "Initializing Terraform..."
+          if terraform init > /dev/null 2>&1; then
+            echo "✅ Terraform initialized successfully"
 
-          # Terraform outputsから値を取得
-          USER_POOL_ID=$(terraform output -raw cognito_user_pool_id 2>/dev/null || echo "")
-          USER_POOL_CLIENT_ID=$(terraform output -raw cognito_user_pool_client_id 2>/dev/null || echo "")
+            # Terraform outputsから値を取得（エラー出力を完全に無視）
+            USER_POOL_ID=$(terraform output -raw cognito_user_pool_id 2>&1 | grep -v "╷" | grep -v "│" | grep -v "╵" | head -n1 || echo "")
+            USER_POOL_CLIENT_ID=$(terraform output -raw cognito_user_pool_client_id 2>&1 | grep -v "╷" | grep -v "│" | grep -v "╵" | head -n1 || echo "")
 
+            # 出力値の検証（AWS User Pool IDの形式チェック）
+            if [[ "$USER_POOL_ID" =~ ^[a-z]+-[a-z]+-[0-9]+_[a-zA-Z0-9]+$ ]] && [[ "$USER_POOL_CLIENT_ID" =~ ^[a-zA-Z0-9]+$ ]]; then
+              echo "✅ Terraform outputsからCognito設定を取得しました"
+              echo "user_pool_id=$USER_POOL_ID" >> $GITHUB_OUTPUT
+              echo "user_pool_client_id=$USER_POOL_CLIENT_ID" >> $GITHUB_OUTPUT
+            else
+              echo "⚠️ Terraform outputs validation failed. Using Secrets..."
+              USER_POOL_ID=""
+              USER_POOL_CLIENT_ID=""
+            fi
+          else
+            echo "⚠️ Terraform init failed. Using Secrets..."
+            USER_POOL_ID=""
+            USER_POOL_CLIENT_ID=""
+          fi
+
+          # Secretsから取得（フォールバック）
           if [ -z "$USER_POOL_ID" ] || [ -z "$USER_POOL_CLIENT_ID" ]; then
-            echo "⚠️ Terraform outputsからCognito設定を取得できませんでした。Secretsから取得します..."
             if [ "${{ steps.set-env.outputs.environment }}" == "prod" ]; then
               echo "user_pool_id=${{ secrets.VITE_USER_POOL_ID }}" >> $GITHUB_OUTPUT
               echo "user_pool_client_id=${{ secrets.VITE_USER_POOL_CLIENT_ID }}" >> $GITHUB_OUTPUT
@@ -100,10 +118,6 @@ jobs:
               echo "user_pool_id=${{ secrets.VITE_USER_POOL_ID_DEV }}" >> $GITHUB_OUTPUT
               echo "user_pool_client_id=${{ secrets.VITE_USER_POOL_CLIENT_ID_DEV }}" >> $GITHUB_OUTPUT
             fi
-          else
-            echo "✅ Terraform outputsからCognito設定を取得しました"
-            echo "user_pool_id=$USER_POOL_ID" >> $GITHUB_OUTPUT
-            echo "user_pool_client_id=$USER_POOL_CLIENT_ID" >> $GITHUB_OUTPUT
           fi
 
       - name: Install dependencies
