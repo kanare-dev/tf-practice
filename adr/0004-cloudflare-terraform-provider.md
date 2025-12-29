@@ -223,3 +223,12 @@ variable "cloudflare_zone_id" {
 - CI/CD環境では環境変数（`TF_VAR_cloudflare_api_token`）での設定を推奨
 
 
+
+
+
+
+
+
+
+
+

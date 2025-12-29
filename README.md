@@ -107,13 +107,17 @@ tf-practice/
 │   ├── src/                 # (必要に応じて) SPAやアプリソース
 │   └── build/               # (自動生成) デプロイ成果物
 ├── terraform/               # IaC/インフラ全般
-│   ├── environments/        # dev, prod, staging別Tf構成
+│   ├── backend-setup/       # Terraform State管理用（初回のみ）
+│   ├── environments/        # dev, prod 環境別構成（State完全分離）
+│   │   ├── prod/            # 本番環境（note-app.kanare.dev）
+│   │   └── dev/             # 開発環境（dev.note-app.kanare.dev）
 │   ├── modules/             # サービス毎モジュール群
-│   └── lambda-functions/    # Lambda用Python等
-├── docs/                   # 運用/設計/提案ドキュメント
-├── adr/                    # 重要設計意思決定(ADR)
-├── diagrams/               # 設計図・SVG・note等
-├── ci-cd/                  # CI/CD用ファイル
+│   ├── lambda-functions/    # Lambda用Python等
+│   └── MIGRATION_GUIDE.md   # 環境分離マイグレーションガイド
+├── docs/                    # 運用/設計/提案ドキュメント
+├── adr/                     # 重要設計意思決定(ADR)
+├── diagrams/                # 設計図・SVG・note等
+├── ci-cd/                   # CI/CD用ファイル
 └── README.md
 ```
 
@@ -121,6 +125,9 @@ tf-practice/
 
 ## クイックスタート
 
+### 📚 主要ドキュメント
+
+- [terraform/MIGRATION_GUIDE.md](terraform/MIGRATION_GUIDE.md): **Dev/Prod環境分離ガイド**（必読）
 - [docs/getting-started.md](docs/getting-started.md): 初期セットアップ
 - [docs/deployment-guide.md](docs/deployment-guide.md): 詳細デプロイ&コスト注意
 - [docs/cicd-guide.md](docs/cicd-guide.md): CI/CD 運用ガイド
@@ -128,15 +135,39 @@ tf-practice/
 - [docs/rebuild-guide.md](docs/rebuild-guide.md): インフラ再構築ガイド（destroy→apply 時）
 - [docs/cloudflare-terraform-guide.md](docs/cloudflare-terraform-guide.md): Cloudflare DNS 自動管理の導入
 
+### 🏗️ 環境構成
+
+本プロジェクトは**Dev/Prod環境を完全分離**しています：
+
+| 環境 | ドメイン | State管理 | 用途 |
+|------|----------|-----------|------|
+| **Prod** | note-app.kanare.dev | `s3://…/prod/terraform.tfstate` | 本番環境（lifecycle保護あり） |
+| **Dev** | dev.note-app.kanare.dev | `s3://…/dev/terraform.tfstate` | 開発環境（自由に破壊可能） |
+
+詳細: [terraform/MIGRATION_GUIDE.md](terraform/MIGRATION_GUIDE.md)
+
 ### セットアップ最短例
 
+#### Phase 1: Backend Setup（初回のみ）
 ```bash
+cd terraform/backend-setup
+terraform init
+terraform apply
+```
+
+#### Phase 2: 環境のデプロイ
+```bash
+# Dev環境の場合
 cd terraform/environments/dev
 cp terraform.tfvars.example terraform.tfvars
 # terraform.tfvars を編集（AWS認証情報、Cloudflare設定など）
 terraform init
 terraform plan
 terraform apply
+
+# Prod環境も同様
+cd ../prod
+# ... 同じ手順
 ```
 
 #### Cloudflare DNS 自動管理

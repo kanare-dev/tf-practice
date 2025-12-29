@@ -1,34 +1,49 @@
 # environments/dev/ - 開発環境構成
 
-このディレクトリは、AWS + Cloudflareを使用したサーバーレス構成の開発環境です。
+このディレクトリは、AWS + Cloudflareを使用したサーバーレス構成の**開発環境**です。
+
+> **注**: 本番環境（Prod）とは完全に分離されており、Terraform Stateも独立しています。Dev環境での変更はProd環境に影響しません。
 
 ## 🏗️ 構成内容
 
+### ドメイン
+
+- **Webサイト**: dev.note-app.kanare.dev
+- **API**: api-dev.note-app.kanare.dev
+
 ### AWS リソース
 
-- **S3**: 静的Webサイトホスティング
+- **S3**: 静的Webサイトホスティング (`dev.note-app.kanare.dev`)
 - **CloudFront**: CDN、HTTPS配信
 - **ACM証明書**: SSL/TLS証明書（us-east-1）
 - **API Gateway**: REST API（カスタムドメイン、レート制限）
-- **Lambda**: APIバックエンド（Python）
-- **DynamoDB**: NoSQLデータベース
+- **Lambda**: APIバックエンド（`note-api-handler-dev`）
+- **DynamoDB**: NoSQLデータベース（`NotesTable-dev`）
+- **Cognito**: ユーザー認証（`note-app-user-pool-dev`）
 
 ### Cloudflare（オプション）
 
 - **DNS管理**: Terraform Providerで自動管理可能
   - ACM証明書検証用CNAMEレコード
-  - CloudFront向けCNAMEレコード
-  - API Gateway向けCNAMEレコード
+  - CloudFront向けCNAMEレコード（`dev.note-app`）
+  - API Gateway向けCNAMEレコード（`api-dev.note-app`）
 
-## ファイル一覧
+## 📁 ファイル一覧
 
+- `backend.tf` - S3バックエンド設定（State: `dev/terraform.tfstate`）
 - `main.tf` - メインリソース定義（AWS + Cloudflare）
-- `variables.tf` - 変数定義（AWS、Cloudflare設定）
+- `variables.tf` - 変数定義（env, domain_name等）
 - `outputs.tf` - 出力定義（エンドポイント、DNS情報など）
 - `terraform.tfvars.example` - 設定例（これをコピーして使用）
 - `terraform.tfvars` - 実際の設定（.gitignoreで除外、手動作成）
 
-## デプロイ手順
+## 🚀 デプロイ手順
+
+### 前提条件
+
+- Backend Setupが完了していること（`terraform/backend-setup`で実行）
+- AWS認証情報が設定されていること
+- Cloudflare APIトークン（DNS自動管理を使用する場合）
 
 ### 1. 設定ファイルの作成
 
@@ -40,6 +55,11 @@ cp terraform.tfvars.example terraform.tfvars
 ### 2. terraform.tfvarsを編集
 
 ```hcl
+# 環境設定
+env              = "dev"
+domain_name      = "dev.note-app.kanare.dev"
+api_domain_name  = "api-dev.note-app.kanare.dev"
+
 # AWS設定
 aws_region = "ap-northeast-1"
 
@@ -133,13 +153,36 @@ terraform destroy
 
 ---
 
+## 🔄 Prod環境への適用
+
+Dev環境でテストした変更をProd環境に適用する手順：
+
+1. **Dev環境で動作確認**
+   ```bash
+   # Dev環境の確認
+   terraform plan
+   terraform apply
+   # 動作テスト
+   ```
+
+2. **Prod環境に適用**
+   ```bash
+   cd ../prod
+   # 同じ変更を適用
+   terraform plan  # 必ず確認！
+   terraform apply
+   ```
+
+詳細: [環境分離マイグレーションガイド](../../MIGRATION_GUIDE.md)
+
 ## 📚 関連ドキュメント
 
-- [デプロイガイド](../../../docs/deployment-guide.md) - 初回デプロイの詳細手順
-- [再構築ガイド](../../../docs/rebuild-guide.md) - destroy→apply時の手順
-- [Cloudflare Terraform導入ガイド](../../../docs/cloudflare-terraform-guide.md) - DNS自動管理の設定
-- [レート制限設定](../../../docs/rate-limiting-setup.md) - API Gatewayのレート制限
-- [ADR](../../../adr/) - 設計決定の記録
+- [../../MIGRATION_GUIDE.md](../../MIGRATION_GUIDE.md) - **環境分離の詳細ガイド**
+- [../../../docs/deployment-guide.md](../../../docs/deployment-guide.md) - 初回デプロイの詳細手順
+- [../../../docs/rebuild-guide.md](../../../docs/rebuild-guide.md) - destroy→apply時の手順
+- [../../../docs/cloudflare-terraform-guide.md](../../../docs/cloudflare-terraform-guide.md) - DNS自動管理の設定
+- [../../../docs/rate-limiting-setup.md](../../../docs/rate-limiting-setup.md) - API Gatewayのレート制限
+- [../../../adr/](../../../adr/) - 設計決定の記録
 
 ---
 

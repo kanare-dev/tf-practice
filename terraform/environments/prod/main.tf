@@ -52,6 +52,7 @@ resource "aws_acm_certificate" "note_app_cert" {
   subject_alternative_names = []
   lifecycle {
     create_before_destroy = true
+    prevent_destroy       = true
   }
 }
 
@@ -108,6 +109,10 @@ resource "aws_cloudfront_distribution" "note_app" {
     Environment = var.env
     System      = "tfpractice"
     ManagedBy   = "terraform"
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -181,6 +186,7 @@ resource "aws_acm_certificate" "api_custom" {
 
   lifecycle {
     create_before_destroy = true
+    prevent_destroy       = true
   }
 }
 
@@ -198,6 +204,10 @@ resource "aws_api_gateway_base_path_mapping" "api_mapping" {
   domain_name = aws_api_gateway_domain_name.api_custom.domain_name
   api_id      = module.api_gateway.api_id
   stage_name  = var.env
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 output "api_custom_domain_target" {
@@ -238,7 +248,7 @@ resource "cloudflare_record" "note_app" {
   count = var.enable_cloudflare_dns ? 1 : 0
 
   zone_id = var.cloudflare_zone_id
-  name    = "dev.note-app"
+  name    = "note-app"
   value   = aws_cloudfront_distribution.note_app.domain_name
   type    = "CNAME"
   proxied = false # DNS only
@@ -250,7 +260,7 @@ resource "cloudflare_record" "api_note_app" {
   count = var.enable_cloudflare_dns ? 1 : 0
 
   zone_id = var.cloudflare_zone_id
-  name    = "api-dev.note-app"
+  name    = "api.note-app"
   value   = aws_api_gateway_domain_name.api_custom.cloudfront_domain_name
   type    = "CNAME"
   proxied = false # DNS only

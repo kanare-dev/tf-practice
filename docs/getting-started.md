@@ -2,6 +2,11 @@
 
 このガイドでは、Terraformを使用してAWSインフラを構築する手順を説明します。
 
+> **📌 重要**: 2025年12月より、本プロジェクトはDev/Prod環境を完全分離しています。
+> 詳細は [terraform/MIGRATION_GUIDE.md](../terraform/MIGRATION_GUIDE.md) を参照してください。
+>
+> このガイドは基本的な手順を説明していますが、**環境分離後の最新の構成については上記ガイドを優先してください。**
+
 ## 前提条件
 
 - AWSアカウントを持っている
@@ -26,32 +31,43 @@ export AWS_SECRET_ACCESS_KEY=your-secret-key
 export AWS_DEFAULT_REGION=ap-northeast-1
 ```
 
-### 2. バックエンド設定（オプション）
+### 2. Backend Setupの実行（必須）
 
-本番環境では、Terraformの状態ファイルをS3バケットに保存することを推奨します。
+**重要**: 本プロジェクトではS3バックエンドが必須です。
 
 ```bash
-# バックエンド用のS3バケットとDynamoDBテーブルを作成
-# （初回のみ実行）
-
-aws s3 mb s3://your-terraform-state-bucket --region ap-northeast-1
-
-aws dynamodb create-table \
-  --table-name terraform-state-lock \
-  --attribute-definitions AttributeName=LockID,AttributeType=S \
-  --key-schema AttributeName=LockID,KeyType=HASH \
-  --billing-mode PAY_PER_REQUEST \
-  --region ap-northeast-1
+# Backend用のリソースを作成（初回のみ）
+cd terraform/backend-setup
+terraform init
+terraform apply
 ```
 
-その後、`environments/dev/main.tf`のバックエンド設定を有効化してください。
+これにより以下が作成されます：
+- S3バケット: `kanare-terraform-state-bucket`
+- DynamoDBテーブル: `terraform-state-locks`
 
-### 3. 変数の設定
+詳細: [terraform/backend-setup/README.md](../terraform/backend-setup/README.md)
 
+### 3. 環境の選択と変数の設定
+
+**Dev環境の場合**:
 ```bash
-cd environments/dev
+cd terraform/environments/dev
 cp terraform.tfvars.example terraform.tfvars
-# 必要に応じて編集
+# terraform.tfvars を編集
+# env = "dev"
+# domain_name = "dev.note-app.kanare.dev"
+# api_domain_name = "api-dev.note-app.kanare.dev"
+```
+
+**Prod環境の場合**:
+```bash
+cd terraform/environments/prod
+cp terraform.tfvars.example terraform.tfvars
+# terraform.tfvars を編集
+# env = "prod"
+# domain_name = "note-app.kanare.dev"
+# api_domain_name = "api.note-app.kanare.dev"
 ```
 
 ### 4. Terraformの初期化
