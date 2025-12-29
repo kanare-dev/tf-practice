@@ -1,32 +1,118 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Authenticator } from '@aws-amplify/ui-react';
-import { signOut } from 'aws-amplify/auth';
-import '@aws-amplify/ui-react/styles.css';
 import './lib/amplify-config';
-import { authenticatedFetch } from './lib/api-client';
+import { AuthProvider } from "@/contexts/auth-context";
+import { useAuth } from "@/hooks/use-auth";
+import type { Note } from "@/lib/repositories";
+import { ApiNotesRepository } from "@/lib/repositories";
+import { MigrationService, type MigrationResult } from "@/lib/migration-service";
 import { NotesList } from "@/components/notes-list";
-import { NoteForm, type Note } from "@/components/note-form";
+import { NoteForm } from "@/components/note-form";
 import { SearchBar } from "@/components/search-bar";
+import { AuthModal } from "@/components/auth-modal";
+import { GuestBanner } from "@/components/guest-banner";
+import { MigrationModal } from "@/components/migration-modal";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import { FaRegCopyright } from "react-icons/fa";
 
-const endpoint = "/notes";
-
 function AppContent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { authMode, repository, openAuthModal, logout, setAuthMode } = useAuth();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [migrationProgress, setMigrationProgress] = useState<{ current: number; total: number } | null>(null);
+  const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null);
+  const [showMigrationModal, setShowMigrationModal] = useState(false);
 
-  // Fetch notes
+  // 認証状態が変わったら移行をチェック
+  useEffect(() => {
+    if (authMode === 'authenticated') {
+      checkAndMigrate();
+    }
+  }, [authMode]);
+
+  // 移行チェックと実行
+  async function checkAndMigrate() {
+    const migrationService = new MigrationService();
+    const hasGuestNotes = await migrationService.hasGuestNotes();
+
+    if (hasGuestNotes) {
+      setAuthMode('migrating');
+      setShowMigrationModal(true);
+      setMigrationProgress({ current: 0, total: 0 });
+
+      try {
+        const apiRepository = new ApiNotesRepository();
+        const result = await migrationService.migrateNotes(
+          apiRepository,
+          (current, total) => {
+            setMigrationProgress({ current, total });
+          }
+        );
+
+        setMigrationResult(result);
+
+        if (result.success) {
+          // 移行成功
+          toast({
+            title: "✓ ノートを移行しました",
+            description: `${result.migratedCount} 件のノートがアカウントに保存されました`,
+          });
+
+          // React Queryのキャッシュを無効化して再取得
+          queryClient.invalidateQueries({ queryKey: ["notes"] });
+          setAuthMode('authenticated');
+
+          // 成功後、3秒でモーダルを自動的に閉じる
+          setTimeout(() => {
+            setShowMigrationModal(false);
+            setMigrationProgress(null);
+            setMigrationResult(null);
+          }, 3000);
+        } else {
+          // 一部失敗
+          toast({
+            title: "⚠ 一部のノートを移行できませんでした",
+            description: `${result.failedCount} 件のノートが移行できませんでした`,
+            variant: "destructive",
+          });
+          setAuthMode('authenticated');
+        }
+      } catch (error) {
+        console.error('Migration error:', error);
+        toast({
+          title: "エラーが発生しました",
+          description: "ノートの移行に失敗しました",
+          variant: "destructive",
+        });
+        setAuthMode('authenticated');
+      }
+    }
+  }
+
+  // 移行リトライ
+  function handleMigrationRetry() {
+    setMigrationResult(null);
+    setMigrationProgress(null);
+    checkAndMigrate();
+  }
+
+  // 移行モーダルを閉じる
+  function closeMigrationModal() {
+    setShowMigrationModal(false);
+    setMigrationProgress(null);
+    setMigrationResult(null);
+  }
+
+  // Fetch notes using repository
   const { data, isLoading, error } = useQuery<{ notes: Note[] }>({
     queryKey: ["notes"],
     queryFn: async () => {
-      const res = await authenticatedFetch(endpoint);
-      if (!res.ok) throw new Error("Failed to fetch notes");
-      return res.json();
+      const notes = await repository.fetchNotes();
+      return { notes };
     },
   });
 
@@ -39,12 +125,7 @@ function AppContent() {
       title: string;
       content: string;
     }) => {
-      const res = await authenticatedFetch(endpoint, {
-        method: "POST",
-        body: JSON.stringify({ title, content }),
-      });
-      if (!res.ok) throw new Error("Failed to add note");
-      return res.json();
+      return repository.createNote(title, content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -73,12 +154,7 @@ function AppContent() {
       title: string;
       content: string;
     }) => {
-      const res = await authenticatedFetch(`${endpoint}/${noteId}`, {
-        method: "PUT",
-        body: JSON.stringify({ title, content }),
-      });
-      if (!res.ok) throw new Error("Failed to update note");
-      return res.json();
+      return repository.updateNote(noteId, title, content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -100,10 +176,7 @@ function AppContent() {
   // Delete note mutation
   const deleteMutation = useMutation({
     mutationFn: async (noteId: string) => {
-      const res = await authenticatedFetch(`${endpoint}/${noteId}`, {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Failed to delete note");
+      return repository.deleteNote(noteId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
@@ -137,9 +210,19 @@ function AppContent() {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await logout();
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      toast({
+        title: "✓ サインアウトしました",
+        description: "またのご利用をお待ちしています",
+      });
     } catch (error) {
       console.error('Error signing out:', error);
+      toast({
+        title: "エラーが発生しました",
+        description: "サインアウトに失敗しました",
+        variant: "destructive",
+      });
     }
   };
 
@@ -155,13 +238,22 @@ function AppContent() {
       <div className="mx-auto max-w-5xl px-4 py-8 md:py-12">
         {/* Header */}
         <header className="mb-12 text-center">
-          <div className="mb-4 flex justify-end">
-            <button
-              onClick={handleSignOut}
-              className="rounded-md bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
-            >
-              サインアウト
-            </button>
+          <div className="mb-4 flex justify-end gap-3">
+            {authMode === 'guest' ? (
+              <button
+                onClick={openAuthModal}
+                className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+              >
+                ログイン / サインアップ
+              </button>
+            ) : (
+              <button
+                onClick={handleSignOut}
+                className="rounded-md bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
+              >
+                サインアウト
+              </button>
+            )}
           </div>
           <div className="mb-3 inline-flex items-center justify-center rounded-full bg-accent/10 px-4 py-1.5">
             <span className="text-sm font-medium text-accent">
@@ -175,6 +267,9 @@ function AppContent() {
             シンプルで強力なノート管理システム。思考を整理し、アイデアを保存しましょう。
           </p>
         </header>
+
+        {/* Guest Banner */}
+        {authMode === 'guest' && <GuestBanner />}
 
         {/* Search Bar */}
         <div className="mb-8">
@@ -238,6 +333,19 @@ function AppContent() {
           </div>
         </footer>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal />
+
+      {/* Migration Modal */}
+      <MigrationModal
+        isOpen={showMigrationModal}
+        progress={migrationProgress}
+        result={migrationResult}
+        onRetry={handleMigrationRetry}
+        onClose={closeMigrationModal}
+      />
+
       <Toaster />
     </div>
   );
@@ -245,11 +353,8 @@ function AppContent() {
 
 export default function App() {
   return (
-    <Authenticator
-      signUpAttributes={['email']}
-      loginMechanisms={['email']}
-    >
-      {() => <AppContent />}
-    </Authenticator>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
