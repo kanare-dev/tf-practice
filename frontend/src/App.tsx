@@ -127,7 +127,7 @@ function AppContent() {
       const notes = await repository.fetchNotes();
       return { notes };
     },
-    enabled: authMode !== 'migrating',
+    enabled: authMode !== "migrating",
   });
 
   // Add note mutation
@@ -141,11 +141,11 @@ function AppContent() {
     }) => {
       return repository.createNote(title, content);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       toast({
         title: "✓ ノートを作成しました",
-        description: "新しいノートが追加されました",
+        description: `新しいノートが追加されました：${variables.title}`,
       });
     },
     onError: () => {
@@ -170,12 +170,12 @@ function AppContent() {
     }) => {
       return repository.updateNote(noteId, title, content);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       setEditingNote(null);
       toast({
         title: "✓ ノートを更新しました",
-        description: "変更が保存されました",
+        description: `変更が保存されました：${variables.title}`,
       });
     },
     onError: () => {
@@ -189,14 +189,14 @@ function AppContent() {
 
   // Delete note mutation
   const deleteMutation = useMutation({
-    mutationFn: async (noteId: string) => {
+    mutationFn: async ({ noteId }: { noteId: string; title: string }) => {
       return repository.deleteNote(noteId);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       toast({
         title: "✓ ノートを削除しました",
-        description: "ノートが削除されました",
+        description: `ノートが削除されました：${variables.title}`,
       });
     },
     onError: () => {
@@ -306,9 +306,14 @@ function AppContent() {
           notes={filteredNotes || []}
           isLoading={isLoading}
           error={error}
-          onDelete={(noteId) => deleteMutation.mutate(noteId)}
+          onDelete={(noteId) => {
+            const note = filteredNotes?.find((n) => n.noteId === noteId);
+            if (note) {
+              deleteMutation.mutate({ noteId, title: note.title });
+            }
+          }}
           onEdit={setEditingNote}
-          isDeletingId={deleteMutation.variables}
+          isDeletingId={deleteMutation.variables?.noteId}
           searchQuery={searchQuery}
         />
 
