@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import './lib/amplify-config';
+import "./lib/amplify-config";
 import { AuthProvider } from "@/contexts/auth-context";
 import { useAuth } from "@/hooks/use-auth";
 import type { Note } from "@/lib/repositories";
 import { ApiNotesRepository } from "@/lib/repositories";
-import { MigrationService, type MigrationResult } from "@/lib/migration-service";
+import {
+  MigrationService,
+  type MigrationResult,
+} from "@/lib/migration-service";
 import { NotesList } from "@/components/notes-list";
 import { NoteForm } from "@/components/note-form";
 import { SearchBar } from "@/components/search-bar";
@@ -19,17 +22,22 @@ import { FaRegCopyright } from "react-icons/fa";
 function AppContent() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { authMode, repository, openAuthModal, logout, setAuthMode } = useAuth();
+  const { authMode, repository, openAuthModal, logout, setAuthMode } =
+    useAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [editingNote, setEditingNote] = useState<Note | null>(null);
-  const [migrationProgress, setMigrationProgress] = useState<{ current: number; total: number } | null>(null);
-  const [migrationResult, setMigrationResult] = useState<MigrationResult | null>(null);
+  const [migrationProgress, setMigrationProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
+  const [migrationResult, setMigrationResult] =
+    useState<MigrationResult | null>(null);
   const [showMigrationModal, setShowMigrationModal] = useState(false);
 
   // 認証状態が変わったら移行をチェック
   useEffect(() => {
-    if (authMode === 'authenticated') {
+    if (authMode === "authenticated") {
       checkAndMigrate();
     }
   }, [authMode]);
@@ -40,7 +48,7 @@ function AppContent() {
     const hasGuestNotes = await migrationService.hasGuestNotes();
 
     if (hasGuestNotes) {
-      setAuthMode('migrating');
+      setAuthMode("migrating");
       setShowMigrationModal(true);
       setMigrationProgress({ current: 0, total: 0 });
 
@@ -64,7 +72,7 @@ function AppContent() {
 
           // React Queryのキャッシュを無効化して再取得
           queryClient.invalidateQueries({ queryKey: ["notes"] });
-          setAuthMode('authenticated');
+          setAuthMode("authenticated");
 
           // 成功後、3秒でモーダルを自動的に閉じる
           setTimeout(() => {
@@ -79,16 +87,16 @@ function AppContent() {
             description: `${result.failedCount} 件のノートが移行できませんでした`,
             variant: "destructive",
           });
-          setAuthMode('authenticated');
+          setAuthMode("authenticated");
         }
       } catch (error) {
-        console.error('Migration error:', error);
+        console.error("Migration error:", error);
         toast({
           title: "エラーが発生しました",
           description: "ノートの移行に失敗しました",
           variant: "destructive",
         });
-        setAuthMode('authenticated');
+        setAuthMode("authenticated");
       }
     }
   }
@@ -213,14 +221,14 @@ function AppContent() {
       await logout();
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       toast({
-        title: "✓ サインアウトしました",
+        title: "✓ ログアウトしました",
         description: "またのご利用をお待ちしています",
       });
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
       toast({
         title: "エラーが発生しました",
-        description: "サインアウトに失敗しました",
+        description: "ログアウトに失敗しました",
         variant: "destructive",
       });
     }
@@ -238,23 +246,16 @@ function AppContent() {
       <div className="mx-auto max-w-5xl px-4 py-8 md:py-12">
         {/* Header */}
         <header className="mb-12 text-center">
-          <div className="mb-4 flex justify-end gap-3">
-            {authMode === 'guest' ? (
-              <button
-                onClick={openAuthModal}
-                className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
-              >
-                ログイン / サインアップ
-              </button>
-            ) : (
+          {authMode !== "guest" && (
+            <div className="mb-4 flex justify-end gap-3">
               <button
                 onClick={handleSignOut}
                 className="rounded-md bg-accent/10 px-4 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
               >
-                サインアウト
+                ログアウト
               </button>
-            )}
-          </div>
+            </div>
+          )}
           <div className="mb-3 inline-flex items-center justify-center rounded-full bg-accent/10 px-4 py-1.5">
             <span className="text-sm font-medium text-accent">
               Productivity Tool
@@ -269,7 +270,7 @@ function AppContent() {
         </header>
 
         {/* Guest Banner */}
-        {authMode === 'guest' && <GuestBanner />}
+        {authMode === "guest" && <GuestBanner />}
 
         {/* Search Bar */}
         <div className="mb-8">
