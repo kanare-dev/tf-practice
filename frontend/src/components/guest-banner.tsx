@@ -52,7 +52,7 @@ export function GuestBanner() {
             onClick={openAuthModal}
             className="group inline-flex items-center gap-2 rounded-lg bg-accent px-8 py-3 text-sm font-medium text-accent-foreground shadow-sm transition-all hover:bg-accent/90 hover:shadow-md"
           >
-            <span>アカウントを作成</span>
+            <span>ログイン/サインアップ</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
