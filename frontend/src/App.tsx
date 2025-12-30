@@ -224,8 +224,11 @@ function AppContent() {
 
   const handleSignOut = async () => {
     try {
+      // ログアウト前に進行中のクエリをキャンセル
+      await queryClient.cancelQueries({ queryKey: ["notes"] });
       await logout();
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      // クエリをクリアして、ゲストモードで再取得させる
+      queryClient.removeQueries({ queryKey: ["notes"] });
       toast({
         title: "✓ ログアウトしました",
         description: "またのご利用をお待ちしています",

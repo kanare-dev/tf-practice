@@ -28,12 +28,13 @@ interface ToastPropsExtended extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const Toast = React.forwardRef<HTMLDivElement, ToastPropsExtended>(
-  ({ className, variant = "default", open = true, ...props }, ref) => {
+  ({ className, variant = "default", open = true, onOpenChange, ...props }, ref) => {
     const [isVisible, setIsVisible] = React.useState(open);
 
     React.useEffect(() => {
       setIsVisible(open);
-    }, [open]);
+      onOpenChange?.(open);
+    }, [open, onOpenChange]);
 
     if (!isVisible) return null;
 
