@@ -38,6 +38,9 @@ function AppContent() {
   useEffect(() => {
     if (authMode === "authenticated") {
       checkAndMigrate();
+    } else if (authMode === "guest") {
+      // ゲストモードに戻ったときもクエリを再実行
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
     }
   }, [authMode]);
 
@@ -97,6 +100,9 @@ function AppContent() {
         });
         setAuthMode("authenticated");
       }
+    } else {
+      // ゲストノートがない場合でも、認証後は必ずクエリを再実行
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
     }
   }
 
@@ -116,11 +122,12 @@ function AppContent() {
 
   // Fetch notes using repository
   const { data, isLoading, error } = useQuery<{ notes: Note[] }>({
-    queryKey: ["notes"],
+    queryKey: ["notes", authMode, repository.constructor.name],
     queryFn: async () => {
       const notes = await repository.fetchNotes();
       return { notes };
     },
+    enabled: authMode !== 'migrating',
   });
 
   // Add note mutation
