@@ -10,6 +10,7 @@ type ToasterToast = {
 
 const TOAST_LIMIT = 3;
 const TOAST_REMOVE_DELAY = 5000;
+const TOAST_AUTO_DISMISS_DELAY = 4000; // 4秒後に自動的にdismiss開始
 
 type ToastActionType = {
   type: "ADD_TOAST" | "UPDATE_TOAST" | "DISMISS_TOAST" | "REMOVE_TOAST";
@@ -138,6 +139,11 @@ function toast(props: Toast) {
       },
     } as ToasterToast,
   });
+
+  // 自動的にdismissするタイマーを設定
+  setTimeout(() => {
+    dismiss();
+  }, TOAST_AUTO_DISMISS_DELAY);
 
   return {
     id: id,

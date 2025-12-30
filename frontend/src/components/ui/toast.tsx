@@ -30,19 +30,33 @@ interface ToastPropsExtended extends React.HTMLAttributes<HTMLDivElement> {
 const Toast = React.forwardRef<HTMLDivElement, ToastPropsExtended>(
   ({ className, variant = "default", open = true, onOpenChange, ...props }, ref) => {
     const [isVisible, setIsVisible] = React.useState(open);
+    const [shouldRender, setShouldRender] = React.useState(true);
 
     React.useEffect(() => {
-      setIsVisible(open);
-      onOpenChange?.(open);
+      if (open) {
+        setIsVisible(true);
+        setShouldRender(true);
+      } else {
+        setIsVisible(false);
+        // アニメーション完了後にDOMから削除
+        const timer = setTimeout(() => {
+          setShouldRender(false);
+          onOpenChange?.(false);
+        }, 300); // アニメーション時間に合わせる
+        return () => clearTimeout(timer);
+      }
     }, [open, onOpenChange]);
 
-    if (!isVisible) return null;
+    if (!shouldRender) return null;
 
     return (
       <div
         ref={ref}
         className={cn(
-          "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all animate-in slide-in-from-top-full",
+          "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all duration-300",
+          isVisible
+            ? "animate-in slide-in-from-top-full opacity-100"
+            : "animate-out fade-out slide-out-to-right-full opacity-0",
           variant === "default" &&
             "border bg-card text-card-foreground",
           variant === "destructive" &&
