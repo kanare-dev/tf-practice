@@ -29,7 +29,7 @@
 
 ## システム全体アーキテクチャ
 
-![概要図](diagrams/svg/overview.svg)
+![概要図](diagrams/png/overview.png)
 
 > 詳細な図の解説や拡張方針は [diagrams/note/overview.note.md](diagrams/note/overview.note.md) を参照。
 
