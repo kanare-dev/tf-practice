@@ -112,18 +112,6 @@ terraform show <resource-address>
 terraform output
 ```
 
-### Backend Setup (First-Time Only)
-
-```bash
-cd terraform/backend-setup
-terraform init
-terraform apply
-```
-
-This creates:
-- S3 bucket: `kanare-terraform-state-bucket`
-- DynamoDB table: `terraform-state-locks`
-
 ### AWS CLI Operations
 
 ```bash
