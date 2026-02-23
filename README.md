@@ -128,10 +128,8 @@ tf-practice/
 ### 📚 主要ドキュメント
 
 - [terraform/MIGRATION_GUIDE.md](terraform/MIGRATION_GUIDE.md): **Dev/Prod 環境分離ガイド**（必読）
-- [docs/getting-started.md](docs/getting-started.md): 初期セットアップ
 - [docs/deployment-guide.md](docs/deployment-guide.md): 詳細デプロイ&コスト注意
 - [docs/cicd-guide.md](docs/cicd-guide.md): CI/CD 運用ガイド
-- [docs/github-actions-setup.md](docs/github-actions-setup.md): GitHub Actions 設定ガイド
 - [docs/rebuild-guide.md](docs/rebuild-guide.md): インフラ再構築ガイド（destroy→apply 時）
 - [docs/cloudflare-terraform-guide.md](docs/cloudflare-terraform-guide.md): Cloudflare DNS 自動管理の導入
 
@@ -196,6 +194,5 @@ cloudflare_zone_id    = "your-zone-id"
 
 ## 設計ドキュメント・背景
 
-- [docs/project-proposal.md](docs/project-proposal.md): アイデア/要件/仕様詳細
 - [adr/](adr/): 主要意思決定ドキュメント
 - [diagrams/](diagrams/): draw.io 構成図・svg・設計メモ

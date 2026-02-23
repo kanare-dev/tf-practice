@@ -5,6 +5,7 @@
 ## 目次
 
 - [概要](#概要)
+- [GitHub Secrets設定ガイド](#github-secrets設定ガイド)
 - [ワークフロー一覧](#ワークフロー一覧)
 - [Terraform CI/CDワークフロー](#terraform-cicdワークフロー)
 - [静的サイトデプロイワークフロー](#静的サイトデプロイワークフロー)
@@ -46,6 +47,90 @@ GitHub Repository
 
 ---
 
+## GitHub Secrets設定ガイド
+
+### 必要なGitHub Secrets
+
+#### 必須（AWS）
+
+| Secret名 | 説明 | 取得方法 |
+|---------|------|---------|
+| `AWS_ACCESS_KEY_ID` | AWSアクセスキーID | IAMユーザーから取得 |
+| `AWS_SECRET_ACCESS_KEY` | AWSシークレットアクセスキー | IAMユーザーから取得 |
+
+#### オプション（Cloudflare DNS自動管理）
+
+| Secret名 | 説明 | 取得方法 |
+|---------|------|---------|
+| `ENABLE_CLOUDFLARE_DNS` | Cloudflare DNS管理を有効化（`true`/`false`） | - |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare APIトークン | [Cloudflare導入ガイド](cloudflare-terraform-guide.md)参照 |
+| `CLOUDFLARE_ZONE_ID` | Cloudflare Zone ID | [Cloudflare導入ガイド](cloudflare-terraform-guide.md)参照 |
+
+### Secretsの設定手順
+
+#### ステップ1: リポジトリのSettings画面を開く
+
+1. GitHubリポジトリにアクセス
+2. **Settings**タブをクリック
+3. 左メニューの**Secrets and variables** → **Actions**をクリック
+
+#### ステップ2: Secretsを追加
+
+1. **New repository secret**ボタンをクリック
+2. 以下のSecretsを1つずつ追加：
+
+##### AWS認証情報（必須）
+
+```
+Name: AWS_ACCESS_KEY_ID
+Secret: AKIA...（あなたのアクセスキーID）
+```
+
+```
+Name: AWS_SECRET_ACCESS_KEY
+Secret: （あなたのシークレットアクセスキー）
+```
+
+##### Cloudflare設定（オプション）
+
+Cloudflare DNS自動管理を使用する場合のみ設定：
+
+```
+Name: ENABLE_CLOUDFLARE_DNS
+Secret: true
+```
+
+```
+Name: CLOUDFLARE_API_TOKEN
+Secret: y_abcdefghijklmnopqrstuvwxyz1234567890...
+```
+
+```
+Name: CLOUDFLARE_ZONE_ID
+Secret: 1234567890abcdef1234567890abcdef
+```
+
+#### ステップ3: 確認
+
+Secretsが正しく設定されたか確認：
+
+- **Settings** → **Secrets and variables** → **Actions**
+- 設定したSecretsが表示される（値は隠される）
+
+### セットアップチェックリスト
+
+- [ ] `AWS_ACCESS_KEY_ID`をGitHub Secretsに設定した
+- [ ] `AWS_SECRET_ACCESS_KEY`をGitHub Secretsに設定した
+- [ ] Cloudflare DNS自動管理を使用する場合、以下も設定した：
+  - [ ] `ENABLE_CLOUDFLARE_DNS`
+  - [ ] `CLOUDFLARE_API_TOKEN`
+  - [ ] `CLOUDFLARE_ZONE_ID`
+- [ ] IAMユーザーに適切な権限を付与した
+- [ ] ローカルでテストし、正常に動作することを確認した
+- [ ] PRを作成してワークフローが実行されることを確認した
+
+---
+
 ## ワークフロー一覧
 
 | ワークフロー | ファイル | 目的 | トリガー |
@@ -55,7 +140,7 @@ GitHub Repository
 
 ### 初期セットアップ
 
-GitHub Secretsの設定方法は[GitHub Actions設定ガイド](github-actions-setup.md)を参照してください。
+GitHub Secretsの設定方法は[GitHub Secrets設定ガイド](#github-secrets設定ガイド)を参照してください。
 
 ---
 
@@ -595,6 +680,54 @@ mainブランチに対して:
 
 **原則**: デプロイに必要な最小限の権限のみ
 
+#### Terraform管理用IAMポリシー（推奨）
+
+GitHub Actions用のIAMユーザーには、**必要最小限の権限**のみを付与してください。
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:*",
+        "cloudfront:*",
+        "lambda:*",
+        "apigateway:*",
+        "dynamodb:*",
+        "acm:*",
+        "iam:GetRole",
+        "iam:CreateRole",
+        "iam:AttachRolePolicy",
+        "iam:PassRole"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+または、開発環境向けに特定リージョンに制限する場合：
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "*",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-northeast-1"
+        }
+      }
+    }
+  ]
+}
+```
+
 #### GitHub Secrets管理
 
 ```
@@ -607,6 +740,29 @@ mainブランチに対して:
 - Fork PRからは実行できない設定
 - 必要なワークフローのみに権限付与
 ```
+
+✅ **やるべきこと**:
+- Secretsは必ずGitHub Secretsで管理
+- 定期的にトークンをローテーション（3-6ヶ月ごと）
+- 使用しないSecretsは削除
+
+❌ **やってはいけないこと**:
+- コードにAPIトークンをハードコード
+- PRコメントに機密情報を表示
+- 公開リポジトリでSecretsを使用（Forkから悪用される可能性）
+
+#### Cloudflare APIトークン
+
+最小権限のトークンを作成してください：
+
+**権限**:
+- Zone / DNS / Edit
+- Zone / Zone / Read
+
+**対象Zone**:
+- 特定のZone（kanare.dev）のみ
+
+詳細: [Cloudflare Terraform導入ガイド](cloudflare-terraform-guide.md)
 
 ### 5. モニタリングとロギング
 
@@ -762,6 +918,34 @@ terraform output acm_validation_records
 
 # 3. Cloudflare DNSに手動追加（またはenable_cloudflare_dns = true）
 ```
+
+### Secrets・IAM設定関連
+
+#### エラー: "Error: No value for required variable"（Secrets未設定）
+
+**原因**: GitHub Secretsが設定されていない、または変数名が間違っている
+
+**対処法**:
+1. GitHub Settings → Secrets and variablesで設定を確認
+2. Secret名が正しいか確認（大文字小文字を区別）
+3. ワークフローファイルの環境変数名を確認
+
+#### エラー: "Error: Insufficient access rights"
+
+**原因**: AWS IAMユーザーの権限が不足
+
+**対処法**:
+1. IAMユーザーのポリシーを確認
+2. 必要な権限を追加（S3, CloudFront, Lambda, API Gateway, DynamoDB, ACM）
+
+#### エラー: "Error: authentication failure"（Cloudflare）
+
+**原因**: Cloudflare APIトークンが無効または権限不足
+
+**対処法**:
+1. Cloudflare APIトークンが有効か確認
+2. 権限（Zone DNS Edit）が付与されているか確認
+3. 対象Zone（kanare.dev）が指定されているか確認
 
 ### 静的サイトデプロイ関連
 
@@ -968,7 +1152,6 @@ paths:
 
 ## 関連ドキュメント
 
-- [GitHub Actions設定ガイド](github-actions-setup.md) - Secrets設定の詳細手順
 - [Cloudflare Terraform導入ガイド](cloudflare-terraform-guide.md) - DNS自動管理の設定
 - [デプロイガイド](deployment-guide.md) - 初回デプロイの完全な手順
 - [再構築ガイド](rebuild-guide.md) - インフラの再構築方法
@@ -1000,6 +1183,6 @@ paths:
 
 ---
 
-**更新日**: 2025年12月29日
+**更新日**: 2026年2月23日
 **バージョン**: 2.0
 **変更内容**: ワークフローの詳細説明、環境別フロー、トラブルシューティングを大幅追加

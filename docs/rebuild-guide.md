@@ -321,7 +321,7 @@ aws s3 sync frontend/dist/ s3://note-app.kanare.dev/ --delete
 
 ---
 
-**更新日**: 2025年12月20日  
+**更新日**: 2026年2月23日
 **バージョン**: 1.0
 
 

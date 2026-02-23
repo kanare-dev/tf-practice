@@ -385,7 +385,7 @@ curl -I https://note-app.kanare.dev
 
 HTTP 200 が返れば成功です。
 
-**注意**: 本番環境では GitHub Actions で自動デプロイされます。詳細: [github-actions-setup.md](github-actions-setup.md)
+**注意**: 本番環境では GitHub Actions で自動デプロイされます。詳細: [cicd-guide.md](cicd-guide.md)
 
 ## AWS 料金について
 
@@ -707,7 +707,7 @@ aws lambda get-function-configuration --function-name $LAMBDA_NAME
 
 1. **フロントエンドの開発**: `frontend/` ディレクトリで React アプリを開発
 2. **Lambda 関数の開発**: `lambda-functions/api-handler.py` で API ロジックを実装
-3. **CI/CD の設定**: [github-actions-setup.md](github-actions-setup.md) を参照
+3. **CI/CD の設定**: [cicd-guide.md](cicd-guide.md) を参照
 4. **設計ドキュメントの確認**:
    - [adr/](../adr/) - 設計決定の記録
    - [terraform/MIGRATION_GUIDE.md](../terraform/MIGRATION_GUIDE.md) - 環境分離の詳細
@@ -720,4 +720,4 @@ aws lambda get-function-configuration --function-name $LAMBDA_NAME
 - [AWS 料金計算ツール](https://calculator.aws/)
 - [AWS 無料利用枠](https://aws.amazon.com/jp/free/)
 - [Terraform AWS Provider ドキュメント](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-- [getting-started.md](getting-started.md) - クイックスタートガイド
+
