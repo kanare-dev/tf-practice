@@ -28,10 +28,10 @@ terraform/
 │   ├── dynamodb/          # DynamoDBテーブル管理
 │   ├── api-gateway/       # API Gateway管理
 │   └── cognito/           # Cognito User Pool管理
-├── lambda-functions/      # Lambda関数のソースコード
-│   └── api-handler.py
 └── MIGRATION_GUIDE.md     # 環境分離マイグレーションガイド
 ```
+
+> **注意**: Lambda関数のソースコードはプロジェクトルートの `lambda-functions/api-handler.py` に配置されています。
 
 ## 🏗️ 環境分離アーキテクチャ
 

@@ -4,7 +4,7 @@
 *.tfstate.*
 *.tfvars
 *.tfvars.json
-.terraform.lock.hcl
+# .terraform.lock.hcl はTerraformのベストプラクティスによりコミット対象
 crash.log
 override.tf
 override.tf.json

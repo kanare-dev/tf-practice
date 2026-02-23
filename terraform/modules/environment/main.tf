@@ -129,7 +129,7 @@ resource "aws_cloudfront_distribution" "note_app" {
 module "lambda_api_handler" {
   source        = "../lambda"
   function_name = "note-api-handler-${var.env}"
-  source_file   = "${path.module}/../../lambda-functions/api-handler.py"
+  source_file   = "${path.module}/../../../lambda-functions/api-handler.py"
   handler       = "api-handler.handler"
   runtime       = "python3.11"
   environment_variables = {
