@@ -87,7 +87,6 @@ Date: 2025-12-20
 ### Neutral
 
 - デフォルトで無効（`enable_cloudflare_dns = false`）とし、段階的な導入を可能にする
-- 既存の手動運用フローは `docs/rebuild-guide.md` で引き続きサポート
 - CI/CD 環境では環境変数（`TF_VAR_cloudflare_api_token`）での設定を推奨
 - AWS Route53 への移行は、Cloudflare の既存機能（CDN、DDoS 保護など）を失うため採用しない
 

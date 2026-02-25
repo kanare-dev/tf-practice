@@ -31,8 +31,6 @@
 - 環境ごとに異なるドメイン、API エンドポイント、リソース名
 - Prod 環境には重要リソースの削除保護（`prevent_destroy = true`）
 
-詳細: [terraform/MIGRATION_GUIDE.md](../terraform/MIGRATION_GUIDE.md)
-
 **最初は Dev 環境から始めることを推奨します。**
 
 ## 前提条件
@@ -539,8 +537,6 @@ curl https://$API_DOMAIN/
 
 **重要**: リソースを削除しないと、継続的に料金が発生します。
 
-**注意**: リソースを削除した後、再構築する場合は [再構築ガイド](rebuild-guide.md) を参照してください。
-
 ### Dev 環境の削除（自由に削除可能）
 
 ```bash
@@ -575,8 +571,6 @@ lifecycle {
 ```
 
 その後、`terraform destroy` を実行します。
-
-詳細: [terraform/MIGRATION_GUIDE.md](../terraform/MIGRATION_GUIDE.md)
 
 ### Backend リソースの削除（最後のみ）
 
@@ -710,14 +704,11 @@ aws lambda get-function-configuration --function-name $LAMBDA_NAME
 3. **CI/CD の設定**: [cicd-guide.md](cicd-guide.md) を参照
 4. **設計ドキュメントの確認**:
    - [adr/](../adr/) - 設計決定の記録
-   - [terraform/MIGRATION_GUIDE.md](../terraform/MIGRATION_GUIDE.md) - 環境分離の詳細
    - [architecture.md](architecture.md) - アーキテクチャ設計書
-5. **インフラ再構築**: [rebuild-guide.md](rebuild-guide.md) - インフラ再構築ガイド
-6. **DNS 管理の自動化**: [cloudflare-terraform-guide.md](cloudflare-terraform-guide.md) - Cloudflare Terraform 導入ガイド
+5. **DNS 管理の自動化**: [cloudflare-terraform-guide.md](cloudflare-terraform-guide.md) - Cloudflare Terraform 導入ガイド
 
 ## 参考リンク
 
 - [AWS 料金計算ツール](https://calculator.aws/)
 - [AWS 無料利用枠](https://aws.amazon.com/jp/free/)
 - [Terraform AWS Provider ドキュメント](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-

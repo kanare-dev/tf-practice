@@ -96,13 +96,12 @@ terraform/
 - 管理するリソースが2倍になる
   - 対策: 共有モジュールで設定を統一
 - 初期セットアップの複雑化
-  - 対策: `terraform/MIGRATION_GUIDE.md` で詳細な手順を提供
+  - 対策: 共有モジュールと環境変数で設定を統一
 - State 管理コストの増加
   - 対策: S3 と DynamoDB は低コスト（月数ドル）
 
 ### Neutral
 
-- 詳細な移行手順は `terraform/MIGRATION_GUIDE.md` を参照
 - Terraform の `lifecycle` ブロックでは変数を使用できないため、モジュール経由のリソースには別の保護策を適用
 - 環境間の設定差分は環境変数で最小化
 
@@ -114,5 +113,4 @@ terraform/
 
 ### 関連ドキュメント
 
-- [terraform/MIGRATION_GUIDE.md](../terraform/MIGRATION_GUIDE.md) - 詳細な移行手順
 - [terraform/README.md](../terraform/README.md) - Terraform 構成の概要

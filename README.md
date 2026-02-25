@@ -139,7 +139,6 @@ terraform plan
 terraform apply
 ```
 
-> 初回セットアップの詳細は [terraform/MIGRATION_GUIDE.md](terraform/MIGRATION_GUIDE.md) を参照してください。
 
 ---
 
@@ -160,7 +159,6 @@ terraform apply
 
 | ドキュメント | 内容 |
 |-------------|------|
-| [terraform/MIGRATION_GUIDE.md](terraform/MIGRATION_GUIDE.md) | dev/prod 環境分離の設計と手順 |
 | [docs/cicd-guide.md](docs/cicd-guide.md) | CI/CD パイプラインの詳細 |
 | [docs/cloudflare-terraform-guide.md](docs/cloudflare-terraform-guide.md) | Cloudflare DNS 自動管理の設定 |
 | [adr/](adr/) | アーキテクチャ上の設計判断（ADR） |

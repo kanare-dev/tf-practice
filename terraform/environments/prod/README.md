@@ -169,7 +169,6 @@ aws s3api list-object-versions \
   --prefix prod/terraform.tfstate
 
 # 必要に応じて古いバージョンを復元
-# （詳細はMIGRATION_GUIDE.mdを参照）
 ```
 
 ## 📊 リソースのタグ規則
@@ -183,10 +182,8 @@ aws s3api list-object-versions \
 
 ## 📚 関連ドキュメント
 
-- [../../MIGRATION_GUIDE.md](../../MIGRATION_GUIDE.md) - 環境分離の詳細ガイド
 - [../../../docs/deployment-guide.md](../../../docs/deployment-guide.md) - デプロイガイド
 - [../../../docs/cloudflare-terraform-guide.md](../../../docs/cloudflare-terraform-guide.md) - Cloudflare DNS自動管理
-- [../../../docs/rebuild-guide.md](../../../docs/rebuild-guide.md) - 再構築ガイド
 - [../../../adr/](../../../adr/) - 設計決定の記録
 
 ## ⚠️ トラブルシューティング
@@ -221,8 +218,6 @@ terraform force-unlock <LOCK_ID>
 1. CloudflareのDNS設定を確認
 2. DNS伝播を待つ（最大30分）
 3. "Proxy status"が"DNS only"になっているか確認
-
-詳細は[MIGRATION_GUIDE.md](../../MIGRATION_GUIDE.md)のトラブルシューティングセクションを参照してください。
 
 ## 🆘 緊急時の対応
 

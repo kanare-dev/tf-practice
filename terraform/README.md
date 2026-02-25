@@ -28,7 +28,6 @@ terraform/
 │   ├── dynamodb/          # DynamoDBテーブル管理
 │   ├── api-gateway/       # API Gateway管理
 │   └── cognito/           # Cognito User Pool管理
-└── MIGRATION_GUIDE.md     # 環境分離マイグレーションガイド
 ```
 
 > **注意**: Lambda関数のソースコードはプロジェクトルートの `lambda-functions/api-handler.py` に配置されています。
@@ -85,12 +84,6 @@ cd ../prod
 
 ## 📚 ドキュメント
 
-### 必読
-
-- **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)**: Dev/Prod環境分離の詳細ガイド
-  - マイグレーション手順
-  - トラブルシューティング
-  - 運用ベストプラクティス
 
 ### その他
 
@@ -172,8 +165,6 @@ aws s3 ls s3://kanare-terraform-state-bucket/dev/
 
 ## 🆘 トラブルシューティング
 
-詳細は[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)のトラブルシューティングセクションを参照してください。
-
 ### よくある問題
 
 - **State Lockエラー**: `terraform force-unlock <LOCK_ID>`
@@ -184,6 +175,4 @@ aws s3 ls s3://kanare-terraform-state-bucket/dev/
 
 問題が発生した場合は、以下のドキュメントを確認してください：
 
-- [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
-- [../docs/rebuild-guide.md](../docs/rebuild-guide.md)
 - [../docs/cloudflare-terraform-guide.md](../docs/cloudflare-terraform-guide.md)

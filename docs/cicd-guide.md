@@ -1180,7 +1180,6 @@ paths:
 
 - [Cloudflare Terraform導入ガイド](cloudflare-terraform-guide.md) - DNS自動管理の設定
 - [デプロイガイド](deployment-guide.md) - 初回デプロイの完全な手順
-- [再構築ガイド](rebuild-guide.md) - インフラの再構築方法
 
 ---
 

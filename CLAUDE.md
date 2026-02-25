@@ -317,7 +317,6 @@ aws cloudfront create-invalidation --distribution-id <ID> --paths "/*"
 
 ## Key Files Reference
 
-- `terraform/MIGRATION_GUIDE.md` - Detailed environment separation guide
 - `docs/cloudflare-terraform-guide.md` - Cloudflare DNS automation setup
 - `adr/` - Architecture Decision Records documenting key design choices
 - `diagrams/` - System architecture diagrams and design notes

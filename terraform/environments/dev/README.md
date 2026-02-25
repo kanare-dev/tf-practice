@@ -102,8 +102,6 @@ terraform output
 2. `terraform output`でDNS設定値を確認
 3. Cloudflareダッシュボードで手動設定
 
-詳細: [再構築ガイド](../../../docs/rebuild-guide.md)
-
 ### Option B: 自動管理（推奨）
 
 `terraform.tfvars`で`enable_cloudflare_dns = true`の場合：
@@ -148,8 +146,6 @@ terraform destroy
 - **Cloudflare自動管理あり**: 完全に自動復元
 - **Cloudflare手動管理**: DNSレコードの再設定が必要
 
-詳細: [再構築ガイド](../../../docs/rebuild-guide.md)
-
 ---
 
 ## 🔄 Prod環境への適用
@@ -172,13 +168,9 @@ Dev環境でテストした変更をProd環境に適用する手順：
    terraform apply
    ```
 
-詳細: [環境分離マイグレーションガイド](../../MIGRATION_GUIDE.md)
-
 ## 📚 関連ドキュメント
 
-- [../../MIGRATION_GUIDE.md](../../MIGRATION_GUIDE.md) - **環境分離の詳細ガイド**
 - [../../../docs/deployment-guide.md](../../../docs/deployment-guide.md) - 初回デプロイの詳細手順
-- [../../../docs/rebuild-guide.md](../../../docs/rebuild-guide.md) - destroy→apply時の手順
 - [../../../docs/cloudflare-terraform-guide.md](../../../docs/cloudflare-terraform-guide.md) - DNS自動管理の設定
 - [../../../adr/](../../../adr/) - 設計決定の記録
 
