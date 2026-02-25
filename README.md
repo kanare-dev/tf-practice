@@ -145,6 +145,8 @@ terraform apply
 
 ## CI/CD
 
+![CI/CD構成図](diagrams/png/cicd.png)
+
 | イベント | Terraform | フロントエンド |
 |----------|-----------|----------------|
 | PR 作成 | plan（差分を PR コメント表示） | dev 環境へデプロイ |
