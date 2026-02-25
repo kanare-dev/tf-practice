@@ -250,10 +250,14 @@ git push
    └─ Cloudflare変数（オプション）
 
 4. Planの実行
-   └─ 実行計画をplan_output.txtに保存
+   ├─ 実行計画をplan_output.txtに保存（PRコメント用）
+   └─ バイナリ形式のtfplanを-outオプションで保存
 
 5. PRコメント投稿（PR時のみ）
    └─ 変更内容をコメントに表示
+
+6. tfplanのアーティファクト保存（main push時のみ）
+   └─ tfplan-dev / tfplan-prod としてアップロード（有効期限: 1日）
 ```
 
 **PRコメント例**:
@@ -288,8 +292,12 @@ Plan: 0 to add, 1 to change, 0 to destroy.
 目的: mainマージ時にdev環境を自動適用
 実行タイミング: mainへのpush時のみ（PRでは実行しない）
 依存関係: terraform-plan（dev + prod 両方の成功が必要）
-実行内容: terraform init && terraform apply -auto-approve
+実行内容: terraform init → tfplanダウンロード → terraform apply tfplan
 ```
+
+> **plan/apply の一貫性**: apply ジョブは plan ジョブで生成・保存した tfplan を
+> アーティファクト経由でダウンロードし、そのまま適用する。
+> これにより PR でレビューした plan と実際の apply が必ず一致する。
 
 #### 5. terraform-apply-prod（prod 手動承認 apply）
 
@@ -297,7 +305,7 @@ Plan: 0 to add, 1 to change, 0 to destroy.
 目的: dev適用成功後、手動承認を経てprod環境に適用
 実行タイミング: mainへのpush時、apply-dev成功後
 承認: GitHub Environment "production" の Required Reviewers が承認
-実行内容: terraform init && terraform apply -auto-approve
+実行内容: terraform init → tfplanダウンロード → terraform apply tfplan
 ```
 
 **GitHub Environment 承認フロー**:

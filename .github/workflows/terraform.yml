@@ -175,7 +175,17 @@ jobs:
           TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
         run: |
           terraform plan -no-color -out=tfplan 2>&1 | tee plan_output.txt
-          echo "exitcode=$?" >> $GITHUB_OUTPUT
+          echo "exitcode=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+
+      # plan ジョブで作成した tfplan を apply ジョブに引き渡すためアーティファクトとして保存
+      # main push 時のみアップロード（PR では apply は実行しない）
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v3
+        if: steps.plan.outcome == 'success' && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          name: tfplan-${{ matrix.environment }}
+          path: terraform/environments/${{ matrix.environment }}/tfplan
+          retention-days: 1
 
       # PR作成時にプラン結果をコメントとして追加
       # レビュアーがインフラ変更内容を確認できるようにする
@@ -242,16 +252,16 @@ jobs:
         working-directory: terraform/environments/dev
         run: terraform init
 
+      # plan ジョブで保存した tfplan をダウンロード（PR で表示した内容と同一の変更を適用）
+      - name: Download plan artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-dev
+          path: terraform/environments/dev
+
       - name: Terraform Apply
         working-directory: terraform/environments/dev
-        env:
-          TF_VAR_env: dev
-          TF_VAR_domain_name: dev.note-app.kanare.dev
-          TF_VAR_api_domain_name: api-dev.note-app.kanare.dev
-          TF_VAR_enable_cloudflare_dns: ${{ secrets.ENABLE_CLOUDFLARE_DNS || 'false' }}
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
-          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
-        run: terraform apply -auto-approve
+        run: terraform apply tfplan
 
   # ========================================
   # Job 5: Terraform Apply（prod環境）
@@ -288,13 +298,13 @@ jobs:
         working-directory: terraform/environments/prod
         run: terraform init
 
+      # plan ジョブで保存した tfplan をダウンロード（PR で表示した内容と同一の変更を適用）
+      - name: Download plan artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-prod
+          path: terraform/environments/prod
+
       - name: Terraform Apply
         working-directory: terraform/environments/prod
-        env:
-          TF_VAR_env: prod
-          TF_VAR_domain_name: note-app.kanare.dev
-          TF_VAR_api_domain_name: api.note-app.kanare.dev
-          TF_VAR_enable_cloudflare_dns: ${{ secrets.ENABLE_CLOUDFLARE_DNS || 'false' }}
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
-          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
-        run: terraform apply -auto-approve
+        run: terraform apply tfplan
