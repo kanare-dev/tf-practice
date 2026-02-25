@@ -24,15 +24,14 @@
 ```
 GitHub Repository
     │
-    ├─ Pull Request → Dev環境
-    │   ├─ Terraform Plan（両環境）
-    │   ├─ フロントエンドビルド
-    │   └─ Dev環境へ自動デプロイ
+    ├─ Pull Request
+    │   ├─ Terraform: fmt / validate / plan（dev + prod）→ PRコメント
+    │   └─ フロントエンド: ビルド → Dev環境へ自動デプロイ
     │
-    ├─ Push to main → Prod環境
-    │   ├─ Terraform Validate（両環境）
-    │   ├─ フロントエンドビルド
-    │   └─ Prod環境へ自動デプロイ
+    ├─ Push to main（マージ）
+    │   ├─ Terraform: fmt / validate / plan → apply dev（自動）
+    │   │              → [GitHub Environment承認] → apply prod
+    │   └─ フロントエンド: ビルド → Prod環境へ自動デプロイ
     │
     └─ Manual Dispatch → 任意の環境
         └─ 選択した環境へデプロイ
@@ -40,10 +39,11 @@ GitHub Repository
 
 ### 主要な特徴
 
+- **GitOps**: PRとマージによるインフラ変更管理
 - **環境分離**: Dev/Prod環境を完全に分離
 - **自動化**: PR作成時とマージ時に自動実行
-- **安全性**: Terraformのapplyは手動実行のみ（意図しない変更を防止）
-- **可視性**: PRコメントでデプロイ結果を通知
+- **安全性**: Prod Terraform applyには手動承認が必要（GitHub Environment）
+- **可視性**: PRコメントでplan差分・デプロイ結果を通知
 
 ---
 
@@ -119,15 +119,22 @@ Secretsが正しく設定されたか確認：
 
 ### セットアップチェックリスト
 
-- [ ] `AWS_ACCESS_KEY_ID`をGitHub Secretsに設定した
-- [ ] `AWS_SECRET_ACCESS_KEY`をGitHub Secretsに設定した
-- [ ] Cloudflare DNS自動管理を使用する場合、以下も設定した：
+**GitHub Secrets**
+- [ ] `AWS_ACCESS_KEY_ID` を GitHub Secrets に設定した
+- [ ] `AWS_SECRET_ACCESS_KEY` を GitHub Secrets に設定した
+- [ ] Cloudflare DNS 自動管理を使用する場合、以下も設定した：
   - [ ] `ENABLE_CLOUDFLARE_DNS`
   - [ ] `CLOUDFLARE_API_TOKEN`
   - [ ] `CLOUDFLARE_ZONE_ID`
-- [ ] IAMユーザーに適切な権限を付与した
+
+**GitHub Environment（prod apply の手動承認に必要）**
+- [ ] GitHub リポジトリ → Settings → Environments → `production` を作成した
+- [ ] Required reviewers に自分のアカウントを追加した
+
+**IAM・動作確認**
+- [ ] IAM ユーザーに適切な権限を付与した
 - [ ] ローカルでテストし、正常に動作することを確認した
-- [ ] PRを作成してワークフローが実行されることを確認した
+- [ ] PR を作成してワークフローが実行されることを確認した
 
 ---
 
@@ -273,23 +280,47 @@ Plan: 0 to add, 1 to change, 0 to destroy.
 *Environment: `dev`, Pusher: @canale, Workflow: `Terraform CI`*
 ```
 
-### 重要な設計判断
+### Apply ジョブ
 
-**なぜapplyは自動実行しないのか？**
+#### 4. terraform-apply-dev（dev 自動 apply）
 
-1. **安全性**: 本番環境への意図しない変更を防止
-2. **コスト管理**: 高額なリソース作成を防止
-3. **レビュー**: インフラ変更は必ず人間が確認
-4. **トレーサビリティ**: 誰がいつ適用したか明確化
+```
+目的: mainマージ時にdev環境を自動適用
+実行タイミング: mainへのpush時のみ（PRでは実行しない）
+依存関係: terraform-plan（dev + prod 両方の成功が必要）
+実行内容: terraform init && terraform apply -auto-approve
+```
 
-**手動でapplyする方法**:
+#### 5. terraform-apply-prod（prod 手動承認 apply）
+
+```
+目的: dev適用成功後、手動承認を経てprod環境に適用
+実行タイミング: mainへのpush時、apply-dev成功後
+承認: GitHub Environment "production" の Required Reviewers が承認
+実行内容: terraform init && terraform apply -auto-approve
+```
+
+**GitHub Environment 承認フロー**:
+
+```
+apply-dev 完了
+    ↓
+GitHub Actions が "production" environment の保護ルールを確認
+    ↓
+Required Reviewers に通知（メール + GitHub UI）
+    ↓
+レビュアーが Actions 画面で "Approve and deploy" をクリック
+    ↓
+apply-prod 実行開始
+```
+
+**緊急時の手動 apply**（CI が壊れている場合のみ）:
 
 ```bash
-# ローカル環境で実行
 cd terraform/environments/dev  # または prod
 terraform init
 terraform plan
-terraform apply  # 確認後に実行
+terraform apply
 ```
 
 ---
@@ -555,44 +586,31 @@ git push origin main
 # 3. 自動的にProd環境へデプロイ
 ```
 
-### Terraformインフラ変更の標準フロー
+### Terraform インフラ変更の標準フロー（GitOps）
 
 ```
-【Dev環境での検証】
+1. ブランチを作成
+   └─ git checkout -b feature/your-change
 
-1. ローカルでTerraformコードを変更
-   └─ terraform/environments/dev/
+2. Terraform コードを変更
+   └─ terraform/environments/dev/ または terraform/modules/
 
-2. ローカルで検証
-   cd terraform/environments/dev
-   terraform fmt
-   terraform validate
-   terraform plan
+3. PR を作成
+   ├─ GitHub Actions が自動で fmt / validate / plan を実行
+   └─ PR コメントに dev + prod の plan 差分が表示される
 
-3. PRを作成
-   └─ GitHub ActionsでPlan結果をコメント表示
+4. Plan 差分をレビューしてマージ
+   └─ 「意図した変更のみか」「破壊的変更がないか」を確認
 
-4. レビュー後、マージ
+5. マージ後、dev に自動 apply
+   └─ terraform-apply-dev ジョブが自動実行
 
-5. ローカルで手動Apply
-   terraform apply
-
-
-【Prod環境への適用】
-
-1. Devで動作確認完了
-
-2. Prod環境用のコードを更新
-   └─ terraform/environments/prod/
-
-3. PRを作成
-   └─ Plan結果を入念にレビュー
-
-4. マージ後、ローカルで慎重にApply
-   cd terraform/environments/prod
-   terraform plan  # 最終確認
-   terraform apply
+6. dev 動作確認後、prod への承認
+   └─ GitHub Actions の terraform-apply-prod ジョブで "Approve and deploy" をクリック
 ```
+
+> **注意**: `terraform apply` をローカルで直接実行するのは緊急時のみにしてください。
+> 通常の変更はすべて PR 経由で行い、CI/CD パイプラインを通じて適用します。
 
 ---
 
@@ -1162,16 +1180,17 @@ paths:
 
 ### CI/CDパイプラインの主要な特徴
 
-1. **自動化**: PRとマージで自動デプロイ
-2. **環境分離**: Dev/Prodを完全に分離
-3. **安全性**: Terraformのapplyは手動のみ
-4. **可視性**: PRコメントで結果を通知
+1. **GitOps**: PR / マージによるインフラ変更管理（手動 apply 不要）
+2. **環境分離**: Dev/Prod を完全に分離
+3. **安全性**: Prod apply には GitHub Environment による手動承認が必要
+4. **可視性**: PR コメントで plan 差分・デプロイ結果を通知
 5. **フォールバック**: 複数の設定取得方法
 
 ### 推奨される運用フロー
 
 ```
-開発 → PR作成 → Dev自動デプロイ → レビュー → マージ → Prod自動デプロイ
+開発 → PR作成 → [plan差分確認] → マージ
+  → dev自動apply → [動作確認] → prod承認 → prod apply
 ```
 
 ### セキュリティのベストプラクティス
@@ -1183,6 +1202,6 @@ paths:
 
 ---
 
-**更新日**: 2026年2月23日
-**バージョン**: 2.0
-**変更内容**: ワークフローの詳細説明、環境別フロー、トラブルシューティングを大幅追加
+**更新日**: 2026年2月24日
+**バージョン**: 3.0
+**変更内容**: GitOps化（PR→plan、mainマージ→apply）、GitHub Environmentによるprod承認ゲート追加

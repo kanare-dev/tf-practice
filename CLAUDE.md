@@ -155,13 +155,26 @@ terraform apply -target=module.lambda_api_handler
 
 ## Development Workflow
 
-### Making Infrastructure Changes
+### Making Infrastructure Changes (GitOps Flow)
 
-1. **Test in Dev first**: Always make changes in `terraform/environments/dev/`
-2. **Plan**: Run `terraform plan` to review changes
-3. **Apply**: Run `terraform apply` after confirming plan
-4. **Verify**: Test the changes in dev environment
-5. **Promote to Prod**: Apply same changes to `terraform/environments/prod/`
+Infrastructure changes are managed via GitOps — **do not run `terraform apply` manually** except in emergencies.
+
+1. **Create a branch** from `main`
+2. **Make changes** in `terraform/environments/dev/` and/or `terraform/modules/`
+3. **Open a PR** → CI automatically runs plan for both dev and prod, posts diff as PR comment
+4. **Review the plan** in the PR comment before merging
+5. **Merge to main** → CI automatically applies to dev (no approval needed)
+6. **Approve prod deployment** → A notification appears in GitHub Actions; a Required Reviewer approves to trigger apply to prod
+
+#### Emergency manual apply
+
+If you must apply manually (e.g., CI is broken):
+
+```bash
+cd terraform/environments/dev  # or prod
+terraform plan
+terraform apply
+```
 
 ### Deploying Frontend Changes
 
@@ -203,14 +216,27 @@ terraform output cognito_user_pool_client_id
 
 ## CI/CD Pipelines
 
-### Terraform CI (`.github/workflows/terraform.yml`)
+### Terraform CI/CD (`.github/workflows/terraform.yml`)
+
+GitOps pipeline: **PR → plan preview, merge to main → auto-apply**.
 
 - **Triggers**: Push/PR to `main`/`develop` affecting `terraform/` files
 - **Jobs**:
   1. Format check (`terraform fmt -check`)
   2. Validate (both dev and prod environments)
-  3. Plan (both dev and prod, with PR comments)
-- **Note**: Only `plan` is automated; `apply` must be manual
+  3. Plan (both dev and prod, posts diff as PR comment on PRs)
+  4. Apply dev (auto, only on push to main — no approval needed)
+  5. Apply prod (only on push to main — **requires manual approval** via GitHub Environment)
+
+**Flow diagram:**
+
+```
+PR:          fmt → validate → plan → [PR comment with diff]
+merge main:  fmt → validate → plan → apply dev → [approve?] → apply prod
+```
+
+**Setup required (one-time):**
+GitHub repository → Settings → Environments → New environment: `production` → Required reviewers → add yourself
 
 ### Static Site Deployment (`.github/workflows/deploy-static-site.yml`)
 

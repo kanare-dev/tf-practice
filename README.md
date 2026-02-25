@@ -187,10 +187,36 @@ cloudflare_zone_id    = "your-zone-id"
 
 ## CI/CD について
 
-- GitHub Actions を利用した自動 plan/validate
-  - **pull_request（PR）時のみ plan 結果が PR コメントとして通知され、push（main/develop 等）では plan 結果が Actions コンソールにのみ出力されます**
-  - apply/destroy は手作業で実施します
-- `.github/workflows/terraform.yml`, `.github/workflows/deploy-static-site.yml` にて管理
+GitHub Actions による GitOps パイプラインを実装しています。
+
+### Terraform（インフラ）
+
+| イベント | 実行内容 |
+|----------|----------|
+| PR 作成 | fmt / validate / plan（dev + prod）→ PR コメントに差分を表示 |
+| main マージ | 上記 + **dev 自動 apply** → **prod 手動承認後 apply** |
+
+```
+PR:          fmt → validate → plan → [PR コメント]
+main merge:  fmt → validate → plan → apply dev → [承認待ち] → apply prod
+```
+
+prod への apply は **GitHub Environment "production"** の Required Reviewers による承認が必要です。
+
+### フロントエンド（静的サイト）
+
+| イベント | デプロイ先 |
+|----------|------------|
+| PR 作成 | dev 環境（プレビュー） |
+| main マージ | prod 環境 |
+| 手動実行 | 選択した環境 |
+
+### ワークフローファイル
+
+- `.github/workflows/terraform.yml` — インフラ CI/CD
+- `.github/workflows/deploy-static-site.yml` — フロントエンドデプロイ
+
+詳細: [docs/cicd-guide.md](docs/cicd-guide.md)
 
 ## 設計ドキュメント・背景
 

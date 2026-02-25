@@ -1,6 +1,6 @@
-# Terraformコードの品質チェックとインフラ変更計画を自動実行するCI/CDパイプライン
-# - フォーマットチェック、検証、プラン実行を行う
-# - apply（実際のインフラ変更）は手動実行が必要
+# TerraformのGitOpsパイプライン
+# - PR作成時: フォーマットチェック・検証・プラン（PRにコメント）
+# - mainマージ時: プラン → dev自動apply → prod手動承認apply
 name: Terraform CI
 
 # トリガー条件
@@ -208,3 +208,93 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
+
+  # ========================================
+  # Job 4: Terraform Apply（dev環境）
+  # ========================================
+  # 目的: mainマージ時にdev環境へ自動適用
+  # 実行タイミング: mainへのpush時のみ（PRでは実行しない）
+  # 依存関係: fmt・validate・plan（dev+prod両方）が成功した場合のみ実行
+  terraform-apply-dev:
+    name: Terraform Apply (dev)
+    runs-on: ubuntu-latest
+    needs: [terraform-plan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: terraform/environments/dev
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform/environments/dev
+        env:
+          TF_VAR_env: dev
+          TF_VAR_domain_name: dev.note-app.kanare.dev
+          TF_VAR_api_domain_name: api-dev.note-app.kanare.dev
+          TF_VAR_enable_cloudflare_dns: ${{ secrets.ENABLE_CLOUDFLARE_DNS || 'false' }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
+        run: terraform apply -auto-approve
+
+  # ========================================
+  # Job 5: Terraform Apply（prod環境）
+  # ========================================
+  # 目的: dev適用成功後、手動承認を経てprod環境へ適用
+  # 実行タイミング: mainへのpush時、apply-dev成功後
+  # 承認: GitHub Environment "production" の Required reviewers による手動承認が必要
+  # 事前準備: GitHub Settings → Environments → "production" → Required reviewers を設定
+  terraform-apply-prod:
+    name: Terraform Apply (prod)
+    runs-on: ubuntu-latest
+    needs: [terraform-apply-dev]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        working-directory: terraform/environments/prod
+        run: terraform init
+
+      - name: Terraform Apply
+        working-directory: terraform/environments/prod
+        env:
+          TF_VAR_env: prod
+          TF_VAR_domain_name: note-app.kanare.dev
+          TF_VAR_api_domain_name: api.note-app.kanare.dev
+          TF_VAR_enable_cloudflare_dns: ${{ secrets.ENABLE_CLOUDFLARE_DNS || 'false' }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN || '' }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID || '' }}
+        run: terraform apply -auto-approve
