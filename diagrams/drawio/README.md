@@ -1,4 +1,9 @@
 # drawio/ ディレクトリ
 
-このディレクトリには編集元・バージョン管理対象の .drawio ファイルを置きます。公開用SVG等はsvg/へ。
+## Overview
 
+![Overview](overview.drawio.svg)
+
+## CI/CD
+
+![CI/CD](cicd.drawio.svg)
