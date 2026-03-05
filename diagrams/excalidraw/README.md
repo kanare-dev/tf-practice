@@ -1,4 +1,4 @@
-# drawio/ ディレクトリ
+# excalidraw/ ディレクトリ
 
 ## Overview
 
